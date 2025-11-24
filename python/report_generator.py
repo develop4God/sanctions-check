@@ -158,29 +158,18 @@ class ReportMetadataCollector:
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     
-    def _extract_namespace(self, xml_path: Path) -> str:
-        """Dynamically extract namespace from XML root element"""
-        try:
-            with open(xml_path, 'rb') as f:
-                for event, elem in ET.iterparse(f, events=('start',)):
-                    tag = elem.tag
-                    if tag.startswith('{'):
-                        ns_end = tag.index('}')
-                        return tag[:ns_end + 1]
-                    break
-        except Exception as e:
-            logger.warning(f"Could not extract namespace from {xml_path}: {e}")
-        return ''
-    
     def extract_ofac_metadata(self) -> Optional[ListMetadata]:
         """Extract metadata from OFAC file with dynamic namespace"""
+        # Import shared utility to avoid code duplication
+        from xml_utils import extract_xml_namespace
+        
         xml_file = self.data_dir / "sdn_enhanced.xml"
         if not xml_file.exists():
             return None
         
         try:
-            # Extract namespace dynamically
-            namespace = self._extract_namespace(xml_file)
+            # Extract namespace dynamically using shared utility
+            namespace = extract_xml_namespace(xml_file)
             
             tree = ET.parse(xml_file)
             root = tree.getroot()

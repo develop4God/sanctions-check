@@ -123,8 +123,9 @@ class EnhancedSanctionsScreener:
         self.reports_dir = Path(self.config.reporting.output_directory)
         self.reports_dir.mkdir(exist_ok=True)
         
-        # Screening history for audit trail
+        # Screening history for audit trail (with size limit to prevent memory issues)
         self.screening_history: List[Dict[str, Any]] = []
+        self._max_history_size = 10000  # Limit to prevent memory issues in long-running apps
         
         logger.info(f"🔧 Enhanced Screener initialized:")
         logger.info(f"   - Data directory: {self.data_dir}")
@@ -643,22 +644,35 @@ class EnhancedSanctionsScreener:
                 if input_data.country:
                     input_countries.append(input_data.country.upper())
                 
-                entity_countries = [c.upper() for c in entity.get('countries', [])]
+                entity_countries = set(c.upper() for c in entity.get('countries', []))
                 entity_nat = entity.get('nationality', '')
                 entity_cit = entity.get('citizenship', '')
                 
                 if entity_nat:
-                    entity_countries.append(entity_nat.upper())
+                    entity_countries.add(entity_nat.upper())
                 if entity_cit:
-                    entity_countries.append(entity_cit.upper())
+                    entity_countries.add(entity_cit.upper())
                 
-                # Check for any match
-                if any(ic in entity_countries or any(ic in ec for ec in entity_countries) 
-                       for ic in input_countries):
+                # Check for any match - optimized using set intersection first
+                input_countries_set = set(input_countries)
+                if input_countries_set & entity_countries:
+                    # Exact match found via set intersection
                     nat_score = 100.0
                 elif entity_countries:
-                    # Nationality provided but no match - potential mismatch
-                    nat_mismatch = True
+                    # Check for substring matches only if no exact match
+                    found_substring = False
+                    for ic in input_countries:
+                        for ec in entity_countries:
+                            if ic in ec or ec in ic:
+                                found_substring = True
+                                break
+                        if found_substring:
+                            break
+                    if found_substring:
+                        nat_score = 100.0
+                    else:
+                        # Nationality provided but no match - potential mismatch
+                        nat_mismatch = True
             
             # Calculate overall score using weights
             overall = (
@@ -843,8 +857,11 @@ class EnhancedSanctionsScreener:
             }
         }
         
-        # Add to history
+        # Add to history with size limit to prevent memory issues
         self.screening_history.append(result)
+        if len(self.screening_history) > self._max_history_size:
+            # Remove oldest entries when limit exceeded
+            self.screening_history = self.screening_history[-self._max_history_size:]
         
         # Generate reports if requested
         if generate_report:

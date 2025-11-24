@@ -1068,8 +1068,6 @@ class EnhancedSanctionsDownloader:
             'country_codes': sorted(self._discovered_country_codes),
             'list_types': sorted(self._discovered_list_types)
         }
-        
-        return all_entities, validation_result
 
 
 def main():

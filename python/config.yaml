@@ -1,0 +1,143 @@
+# ============================================
+# Sanctions Screening System Configuration
+# Version: 2.0
+# ============================================
+
+# Matching Configuration
+matching:
+  # Default name match threshold (0-100)
+  name_threshold: 85
+  
+  # Stricter threshold for short names (<=2 words or <10 chars)
+  short_name_threshold: 95
+  
+  # Common names requiring extra validation (document or DOB match)
+  common_names:
+    - "Mohamed Ali"
+    - "Mohammed Ali"
+    - "Maria Garcia"
+    - "Maria Rodriguez"
+    - "Li Wei"
+    - "Kim Park"
+    - "John Smith"
+    - "Jose Garcia"
+    - "Juan Martinez"
+    - "Ahmed Hassan"
+    - "Chen Wei"
+    - "Wang Wei"
+    
+  # Scoring weights for multi-layer matching
+  weights:
+    name: 0.40
+    document: 0.30
+    dob: 0.15
+    nationality: 0.10
+    address: 0.05
+    
+  # Confidence thresholds per layer
+  layers:
+    exact_match: 100        # Layer 1: Document/ID exact match
+    high_confidence: 85     # Layer 2: High confidence name match
+    moderate_match: 70      # Layer 3: Moderate match - needs secondary validation
+    low_match: 60           # Layer 4: Low match - manual review
+
+# Data Source Configuration
+data:
+  # OFAC SDN Enhanced XML URL
+  ofac_url: "https://sanctionslistservice.ofac.treas.gov/api/PublicationPreview/exports/SDN_ENHANCED.ZIP"
+  
+  # UN Consolidated List XML URL
+  un_url: "https://scsanctions.un.org/resources/xml/en/consolidated.xml"
+  
+  # Maximum age of data before warning (days)
+  update_frequency_days: 7
+  
+  # Enable XSD schema validation
+  xsd_validation: true
+  
+  # Data directory
+  data_directory: "sanctions_data"
+  
+  # Maximum variance allowed for entity count validation (percentage)
+  entity_count_variance_threshold: 0.5
+  
+  # Maximum percentage of malformed entities allowed
+  malformed_entity_threshold: 1.0
+
+# Reporting Configuration
+reporting:
+  # Include low confidence matches in reports
+  include_low_confidence: false
+  
+  # Minimum score to include in report
+  minimum_report_score: 60
+  
+  # Recommendation thresholds
+  recommendation_thresholds:
+    auto_clear: 60          # Below this = AUTO_CLEAR
+    manual_review: 85       # Between auto_clear and this = MANUAL_REVIEW
+    auto_escalate: 95       # Above manual_review = AUTO_ESCALATE
+    
+  # Output directory for reports
+  output_directory: "reports"
+  
+  # Include full audit trail in reports
+  include_audit_trail: true
+  
+  # Data freshness warning threshold (days)
+  data_freshness_warning_days: 7
+
+# Validation Configuration
+validation:
+  # Required fields for each entity
+  required_entity_fields:
+    - "id"
+    - "name"
+    - "source"
+    
+  # Required fields for individuals
+  required_individual_fields:
+    - "id"
+    - "name"
+    - "source"
+    - "type"
+    
+  # Log validation errors
+  log_validation_errors: true
+  
+  # Abort on high malformation rate
+  abort_on_high_malformation: true
+
+# Logging Configuration
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  
+  # Log file location
+  file: "logs/screening.log"
+  
+  # Enable console output
+  console: true
+  
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Performance Configuration
+performance:
+  # Memory limit in GB
+  memory_limit_gb: 2
+  
+  # Enable concurrent searches
+  concurrent_searches: true
+  
+  # Maximum threads for parallel operations
+  max_threads: 4
+  
+  # Batch size for bulk operations
+  batch_size: 100
+
+# Algorithm Version (for audit trail)
+algorithm:
+  version: "2.0.0"
+  name: "Multi-Layer Fuzzy Matcher"
+  last_updated: "2024-01-01"

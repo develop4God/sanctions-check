@@ -76,6 +76,7 @@ POST /api/v1/data/update
 | `DATA_DIR` | `sanctions_data` | Directory for XML files |
 | `MAX_UPLOAD_SIZE_MB` | `10` | Max CSV upload size |
 | `CONFIG_PATH` | `config.yaml` | Path to config file |
+| `API_KEY` | *(empty)* | API authentication key. Set to enable authentication; leave empty to disable (development mode only). |
 
 ## API Documentation
 

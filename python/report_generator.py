@@ -613,8 +613,14 @@ class ConstanciaReportGenerator:
                         <div class="info-label">Lista:</div>
                         <div><strong>{{ match.source }}</strong></div>
                     
-                        <div class="info-label">ID:</div>
-                        <div class="hash" style="font-size:1.2em;font-weight:bold;">{{ match.entity_id if match.entity_id else 'No Ingresado' }}</div>
+                        <div class="info-label">Identificación:</div>
+                        <div class="hash" style="font-size:1.2em;font-weight:bold;">
+                        {% if match.identifications %}
+                            {{ match.identifications | map(attribute='number') | select('string') | join(', ') }}
+                        {% else %}
+                            <span style="color:#e74c3c;">No disponible en la lista</span>
+                        {% endif %}
+                        </div>
                     
                         <div class="info-label">Programa:</div>
                         <div>{{ match.program or 'N/A' }}</div>
@@ -647,6 +653,11 @@ class ConstanciaReportGenerator:
                         {% if match.countries %}
                         <div class="info-label">Países:</div>
                         <div>{{ match.countries|join(', ') }}</div>
+                        {% endif %}
+                    
+                        {% if 'SECONDARY_SANCTIONS_RISK' in match.flags %}
+                        <div class="info-label" style="color:#d35400;font-weight:bold;">Riesgo de Sanciones Secundarias:</div>
+                        <div style="color:#d35400;font-weight:bold;">⚠️ Este sujeto está vinculado a sanciones secundarias OFAC</div>
                         {% endif %}
                     </div>
                 

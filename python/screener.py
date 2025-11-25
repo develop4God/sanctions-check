@@ -370,17 +370,17 @@ class EnhancedSanctionsScreener:
             'features': []
         }
         
-        # Parse identity documents (directly under entity per OFAC XSD)
-        id_docs_section = elem.find(f'{ns}idDocuments')
-        if id_docs_section is not None:
-            for doc in id_docs_section.findall(f'{ns}idDocument'):
+        # Parse identity documents (OFAC Enhanced XML: <identityDocuments>/<identityDocument>/<documentNumber>)
+        identity_docs_section = elem.find(f'{ns}identityDocuments')
+        if identity_docs_section is not None:
+            for doc in identity_docs_section.findall(f'{ns}identityDocument'):
                 doc_type = self._get_text(doc, f'{ns}type')
-                doc_number = self._get_text(doc, f'{ns}number')
+                doc_number = self._get_text(doc, f'{ns}documentNumber')
                 if doc_number:
                     entity['identity_documents'].append({
                         'type': doc_type or 'Unknown',
                         'number': doc_number,
-                        'issuingCountry': self._get_text(doc, f'{ns}issuedByCountry'),
+                        'issuingCountry': self._get_text(doc, f'{ns}issuingCountry'),
                         'issueDate': self._get_text(doc, f'{ns}issueDate'),
                         'expirationDate': self._get_text(doc, f'{ns}expirationDate')
                     })

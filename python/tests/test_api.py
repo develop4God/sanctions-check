@@ -378,6 +378,44 @@ class TestBulkScreening:
             files={"file": ("test.csv", csv_content, "text/csv")}
         )
         assert response.status_code == 400
+    
+    # Sync test - edge case for UTF-8 encoding
+    def test_bulk_csv_utf8_encoding(self, client):
+        """Upload CSV with UTF-8 characters should process correctly."""
+        csv_content = "nombre,cedula,pais\nMohamed Alí García,12345,España\n李明华 Safe,67890,中国\n"
+        
+        response = client.post(
+            "/api/v1/screen/bulk",
+            files={"file": ("test.csv", csv_content.encode('utf-8'), "text/csv")}
+        )
+        assert response.status_code == 200
+    
+    # Sync test - edge case for malformed CSV
+    def test_bulk_csv_malformed(self, client):
+        """Upload malformed CSV with mismatched columns should handle gracefully."""
+        # More values than headers
+        csv_content = "nombre,cedula\nTest Name,12345,extra_value,another\n"
+        
+        response = client.post(
+            "/api/v1/screen/bulk",
+            files={"file": ("test.csv", csv_content, "text/csv")}
+        )
+        # Should either succeed (ignoring extra) or return 400
+        assert response.status_code in [200, 400]
+    
+    # Sync test - edge case for headers only
+    def test_bulk_csv_headers_only(self, client):
+        """Upload CSV with only headers (no data rows) should handle gracefully."""
+        csv_content = "nombre,cedula,pais\n"
+        
+        response = client.post(
+            "/api/v1/screen/bulk",
+            files={"file": ("test.csv", csv_content, "text/csv")}
+        )
+        # Should succeed (mocked screener returns results regardless of input)
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_processed" in data
 
 
 # ============================================

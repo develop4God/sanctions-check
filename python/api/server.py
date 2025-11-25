@@ -14,6 +14,8 @@ import time
 import uuid
 import logging
 import tempfile
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -66,6 +68,8 @@ CONFIG_PATH = os.getenv("CONFIG_PATH", "config.yaml")
 _screener: Optional[EnhancedSanctionsScreener] = None
 _config: Optional[ConfigManager] = None
 _startup_time: Optional[datetime] = None
+_screener_lock = asyncio.Lock()  # Lock for atomic screener updates
+_executor = ThreadPoolExecutor(max_workers=2)  # For blocking I/O operations
 
 
 def get_screener() -> EnhancedSanctionsScreener:
@@ -119,12 +123,13 @@ async def startup():
         # Initialize screener
         _screener = EnhancedSanctionsScreener(config=_config, data_dir=DATA_DIR)
         
-        # Load OFAC data
-        ofac_count = _screener.load_ofac()
+        # Load OFAC and UN data in executor to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        
+        ofac_count = await loop.run_in_executor(_executor, _screener.load_ofac)
         logger.info(f"✓ Loaded {ofac_count} OFAC entities")
         
-        # Load UN data
-        un_count = _screener.load_un()
+        un_count = await loop.run_in_executor(_executor, _screener.load_un)
         logger.info(f"✓ Loaded {un_count} UN entities")
         
         total_entities = len(_screener.entities)
@@ -251,7 +256,12 @@ async def screen_individual(
         # Re-raise to be handled by exception handler
         raise
     except Exception as e:
-        logger.error(f"Screening error: {e}")
+        logger.error(
+            "Screening error: type=%s message=%s name=%s",
+            type(e).__name__,
+            str(e),
+            request.name[:50] if request.name else 'N/A'
+        )
         raise HTTPException(status_code=500, detail="Screening failed")
 
 
@@ -274,6 +284,7 @@ async def bulk_screen(
     """Bulk screen individuals from a CSV file.
     
     The CSV must have headers: nombre (name), cedula (document), pais (country).
+    Streams file directly to disk to avoid memory issues with large files.
     """
     start_time = time.time()
     screening_id = str(uuid.uuid4())
@@ -289,34 +300,33 @@ async def bulk_screen(
                 detail="File must be a CSV"
             )
     
-    # Read file content in chunks to check size efficiently
     max_size_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
-    chunks = []
-    total_size = 0
-    
-    while True:
-        chunk = await file.read(8192)  # Read 8KB at a time
-        if not chunk:
-            break
-        total_size += len(chunk)
-        if total_size > max_size_bytes:
-            raise HTTPException(
-                status_code=413,
-                detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_MB}MB"
-            )
-        chunks.append(chunk)
-    
-    content = b''.join(chunks)
-    
     temp_path = None
+    
     try:
-        # Save to temp file
+        # Create temp directory
         temp_dir = Path(tempfile.gettempdir()) / "sanctions_bulk"
         temp_dir.mkdir(exist_ok=True)
         temp_path = temp_dir / f"{screening_id}.csv"
         
+        # Stream file directly to disk to avoid memory accumulation
+        total_size = 0
         with open(temp_path, 'wb') as f:
-            f.write(content)
+            while True:
+                chunk = await file.read(8192)  # Read 8KB at a time
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                if total_size > max_size_bytes:
+                    # Clean up partial file before raising
+                    f.close()
+                    if temp_path.exists():
+                        temp_path.unlink()
+                    raise HTTPException(
+                        status_code=413,
+                        detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_MB}MB"
+                    )
+                f.write(chunk)
         
         # Validate CSV headers
         import csv
@@ -371,12 +381,20 @@ async def bulk_screen(
         )
         
     finally:
-        # Cleanup temp file
+        # Cleanup temp file with retry logic
         if temp_path and temp_path.exists():
-            try:
-                temp_path.unlink()
-            except Exception as e:
-                logger.warning(f"Failed to cleanup temp file: {e}")
+            for attempt in range(3):
+                try:
+                    temp_path.unlink()
+                    break
+                except Exception as e:
+                    if attempt == 2:  # Last attempt
+                        logger.error(
+                            "Failed to cleanup temp file after 3 attempts: path=%s error=%s",
+                            temp_path, e
+                        )
+                    else:
+                        await asyncio.sleep(0.1)  # Brief delay before retry
 
 
 @app.get(
@@ -463,28 +481,43 @@ async def health_check(
 async def update_data(
     config: ConfigManager = Depends(get_config_instance)
 ):
-    """Download fresh sanctions data and reload the screener."""
+    """Download fresh sanctions data and reload the screener.
+    
+    Uses a lock for atomic screener swap to prevent race conditions
+    during concurrent requests.
+    """
     global _screener
     
     start_time = time.time()
     
     try:
-        # Create downloader
-        downloader = EnhancedSanctionsDownloader(config=config)
+        # Acquire lock to prevent race conditions during update
+        async with _screener_lock:
+            # Create downloader
+            downloader = EnhancedSanctionsDownloader(config=config)
+            
+            # Download and parse all data in executor (blocking I/O)
+            loop = asyncio.get_event_loop()
+            entities, validation = await loop.run_in_executor(
+                _executor, downloader.download_and_parse_all
+            )
+            
+            # Count by source
+            ofac_count = len([e for e in entities if e.source == 'OFAC'])
+            un_count = len([e for e in entities if e.source == 'UN'])
+            
+            # Create new screener instance
+            new_screener = EnhancedSanctionsScreener(config=config, data_dir=DATA_DIR)
+            
+            # Load data in executor (blocking I/O)
+            await loop.run_in_executor(_executor, new_screener.load_ofac)
+            await loop.run_in_executor(_executor, new_screener.load_un)
+            
+            # Atomic swap - only assign after fully loaded
+            _screener = new_screener
+            
+            total_entities = len(_screener.entities)
         
-        # Download and parse all data
-        entities, validation = downloader.download_and_parse_all()
-        
-        # Count by source
-        ofac_count = len([e for e in entities if e.source == 'OFAC'])
-        un_count = len([e for e in entities if e.source == 'UN'])
-        
-        # Reinitialize screener with new data
-        _screener = EnhancedSanctionsScreener(config=config, data_dir=DATA_DIR)
-        _screener.load_ofac()
-        _screener.load_un()
-        
-        total_entities = len(_screener.entities)
         processing_time_ms = int((time.time() - start_time) * 1000)
         
         return DataUpdateResponse(

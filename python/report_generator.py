@@ -463,6 +463,12 @@ class ConstanciaReportGenerator:
             f.write(json.dumps(audit_entry) + '\n')
         
         logger.info(f"Audit entry logged: {result.screening_id}")
+        # Generar/actualizar el reporte HTML del audit log automáticamente
+        try:
+            from report_generator import generate_auditlog_html
+            generate_auditlog_html()
+        except Exception as e:
+            logger.warning(f"No se pudo actualizar el reporte HTML del audit log: {e}")
     
     def generate_html_report(self, result: ScreeningResult, 
                             list_metadata: List[ListMetadata],

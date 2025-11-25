@@ -74,7 +74,7 @@ def mock_screening_result(mock_match_result):
             'nationality': None,
             'country': None
         },
-        'screening_date': datetime.now().isoformat(),
+        'screening_date': datetime.now(timezone.utc).isoformat(),
         'is_hit': True,
         'hit_count': 2,
         'matches': [mock_match_result, mock_match_result],
@@ -100,7 +100,7 @@ def mock_no_hit_result():
             'nationality': None,
             'country': None
         },
-        'screening_date': datetime.now().isoformat(),
+        'screening_date': datetime.now(timezone.utc).isoformat(),
         'is_hit': False,
         'hit_count': 0,
         'matches': [],
@@ -129,7 +129,7 @@ def mock_screener(mock_screening_result, mock_no_hit_result):
     def mock_bulk_screen(csv_file, **kwargs):
         return {
             'screening_info': {
-                'date': datetime.now().isoformat(),
+                'date': datetime.now(timezone.utc).isoformat(),
                 'analyst': None,
                 'total_screened': 2,
                 'total_hits': 1,

@@ -278,24 +278,35 @@ async def bulk_screen(
     start_time = time.time()
     screening_id = str(uuid.uuid4())
     
-    # Validate file size
-    content = await file.read()
-    size_mb = len(content) / (1024 * 1024)
+    # Allowed content types for CSV files
+    ALLOWED_CONTENT_TYPES = {'text/csv', 'text/plain', 'application/octet-stream', 'application/csv'}
     
-    if size_mb > MAX_UPLOAD_SIZE_MB:
-        raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_MB}MB"
-        )
-    
-    # Validate content type
-    if file.content_type and 'csv' not in file.content_type.lower():
-        # Allow text/plain and application/octet-stream as well
-        if file.content_type not in ['text/plain', 'application/octet-stream']:
+    # Validate content type first (before reading)
+    if file.content_type and file.content_type.lower() not in ALLOWED_CONTENT_TYPES:
+        if 'csv' not in file.content_type.lower():
             raise HTTPException(
                 status_code=400,
                 detail="File must be a CSV"
             )
+    
+    # Read file content in chunks to check size efficiently
+    max_size_bytes = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    chunks = []
+    total_size = 0
+    
+    while True:
+        chunk = await file.read(8192)  # Read 8KB at a time
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > max_size_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_MB}MB"
+            )
+        chunks.append(chunk)
+    
+    content = b''.join(chunks)
     
     temp_path = None
     try:

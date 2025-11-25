@@ -4,6 +4,7 @@ FastAPI Middleware for Sanctions Screening API
 Provides CORS configuration, request logging, and global error handling.
 """
 
+import os
 import time
 import logging
 from datetime import datetime, timezone
@@ -23,21 +24,36 @@ from xml_utils import sanitize_for_logging
 
 logger = logging.getLogger(__name__)
 
+# Default allowed origins for localhost development
+DEFAULT_CORS_ORIGINS = [
+    "http://localhost:3000",   # Common Electron dev port
+    "http://localhost:5173",   # Vite dev port
+    "http://localhost:8080",   # Common dev port
+    "http://localhost:8000",   # FastAPI default port
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:8000",
+]
+
 
 def setup_cors(app: FastAPI) -> None:
     """Configure CORS middleware for the application.
     
     Restricts origins to localhost for security.
+    Origins can be customized via CORS_ORIGINS environment variable
+    (comma-separated list of allowed origins).
     """
+    # Allow customization via environment variable
+    cors_origins_env = os.getenv("CORS_ORIGINS", "")
+    if cors_origins_env:
+        allowed_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+    else:
+        allowed_origins = DEFAULT_CORS_ORIGINS
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-            "http://localhost:3000",  # Common Electron dev port
-            "http://localhost:5173",  # Vite dev port
-            "http://localhost:8080",  # Common dev port
-        ],
+        allow_origins=allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],

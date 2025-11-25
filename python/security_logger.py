@@ -144,6 +144,9 @@ class SecurityLogger:
     def _sanitize_input(self, text: str, max_length: int = 50) -> str:
         """Sanitize input for safe logging
         
+        Uses the shared sanitize_for_logging function from xml_utils for
+        consistent sanitization behavior.
+        
         Args:
             text: Input text to sanitize
             max_length: Maximum length to include
@@ -151,14 +154,13 @@ class SecurityLogger:
         Returns:
             Sanitized text safe for logging
         """
-        import re
+        from xml_utils import sanitize_for_logging
+        
         if not text:
             return ""
-        # Remove control characters and newlines
-        sanitized = re.sub(r'[\r\n\x00-\x1f\x7f-\x9f]', ' ', str(text))
-        # Collapse spaces
-        sanitized = re.sub(r'\s+', ' ', sanitized).strip()
-        # Truncate
+        # Use shared sanitization logic
+        sanitized = sanitize_for_logging(text)
+        # Apply additional length truncation for security logs
         if len(sanitized) > max_length:
             return sanitized[:max_length] + "...(truncated)"
         return sanitized

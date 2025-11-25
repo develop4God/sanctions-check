@@ -25,6 +25,7 @@ POST /api/v1/screen
 # Request
 curl -X POST http://localhost:8000/api/v1/screen \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key-here" \
   -d '{"name": "Mohamed Ali"}'
 
 # Response
@@ -45,6 +46,7 @@ POST /api/v1/screen/bulk
 
 # Upload CSV file
 curl -X POST http://localhost:8000/api/v1/screen/bulk \
+  -H "X-API-Key: your-api-key-here" \
   -F "file=@input.csv"
 
 # CSV format: nombre,cedula,pais

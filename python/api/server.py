@@ -476,6 +476,7 @@ async def health_check(
                 if oldest_file_time is None or modified_time < oldest_file_time:
                     oldest_file_time = modified_time
             except Exception:
+                # Ignorar archivos inaccesibles o con errores de lectura (no afectan el cálculo de fecha más antigua)
                 pass
     
     # Calculate data age
@@ -491,6 +492,7 @@ async def health_check(
         process = psutil.Process()
         memory_usage_mb = round(process.memory_info().rss / (1024 * 1024), 2)
     except ImportError:
+        # Si psutil no está instalado, simplemente omitir el cálculo de uso de memoria
         pass
     except Exception:
         pass

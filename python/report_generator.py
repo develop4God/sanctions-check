@@ -13,18 +13,29 @@ def generate_auditlog_html(audit_log_path=None, output_path=None):
                         entries.append(json.loads(line))
                     except Exception:
                         pass
-    html = """
+    # Load base64 logo
+    logo_base64 = ""
+    logo_path = Path("python/logo_base64.txt")
+    if logo_path.exists():
+        with open(logo_path, "r", encoding="utf-8") as lf:
+            for line in lf:
+                if line.strip() and not line.startswith("#"):
+                    logo_base64 = line.strip()
+                    break
+    html = f"""
     <html>
     <head>
         <title>Audit Log Report</title>
         <style>
-            body { font-family: Arial, sans-serif; margin: 2em; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ccc; padding: 8px; }
-            th { background: #eee; }
+            body {{ font-family: Arial, sans-serif; margin: 2em; }}
+            table {{ border-collapse: collapse; width: 100%; }}
+            th, td {{ border: 1px solid #ccc; padding: 8px; }}
+            th {{ background: #eee; }}
+            .logo {{ width: 120px; margin-bottom: 1em; }}
         </style>
     </head>
     <body>
+        <img src='data:image/png;base64,{logo_base64}' class='logo' alt='Logo'>
         <h2>Audit Log Report</h2>
         <table>
             <tr>
@@ -465,7 +476,6 @@ class ConstanciaReportGenerator:
         logger.info(f"Audit entry logged: {result.screening_id}")
         # Generar/actualizar el reporte HTML del audit log automáticamente
         try:
-            from report_generator import generate_auditlog_html
             generate_auditlog_html()
         except Exception as e:
             logger.warning(f"No se pudo actualizar el reporte HTML del audit log: {e}")

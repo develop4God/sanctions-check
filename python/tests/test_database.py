@@ -50,15 +50,8 @@ class TestNormalizationFunctions:
         assert normalize_name("") == ""
     
     def test_normalize_name_none(self):
-        """Test None name handling."""
-        # The function should handle None gracefully
-        result = normalize_name(None) if normalize_name.__code__.co_argcount == 1 else ""
-        # If the function doesn't handle None, this test documents expected behavior
-        try:
-            assert normalize_name(None) == ""
-        except (TypeError, AttributeError):
-            # Some implementations may not handle None
-            pass
+        """Test None name handling - function should return empty string."""
+        assert normalize_name(None) == ""
     
     def test_normalize_document_basic(self):
         """Test basic document normalization."""
@@ -66,9 +59,9 @@ class TestNormalizationFunctions:
         assert normalize_document("pa-123-456-78") == "PA12345678"
     
     def test_normalize_document_with_spaces(self):
-        """Test document normalization with spaces."""
+        """Test that spaces, dashes and dots are removed from document numbers."""
         assert normalize_document("PA 123 456 78") == "PA12345678"
-        # The function removes dots, so this should work
+        # Dots should also be removed during normalization
         result = normalize_document("12.345.678-9")
         assert result == "123456789"
     

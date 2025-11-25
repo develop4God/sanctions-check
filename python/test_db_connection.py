@@ -52,8 +52,8 @@ def test_basic_connection():
         cursor.execute("SELECT version();")
         version = cursor.fetchone()[0]
         
-        print(f"\n✅ CONEXIÓN EXITOSA A POSTGRESQL")
-        print(f"📊 Versión de la Base de Datos: {version}")
+        print(f"\n✅ CONNECTION SUCCESSFUL TO POSTGRESQL")
+        print(f"📊 Database Version: {version}")
         
         cursor.close()
         conn.close()

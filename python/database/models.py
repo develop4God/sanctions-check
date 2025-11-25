@@ -988,9 +988,19 @@ def normalize_name(name: str) -> str:
     Normalize a name for consistent storage and searching.
     
     Removes accents, converts to uppercase, normalizes whitespace.
+    
+    Args:
+        name: The name to normalize (can be None)
+        
+    Returns:
+        Normalized name string, or empty string if name is None/empty
     """
     import unicodedata
     import re
+    
+    # Explicitly handle None input
+    if name is None:
+        return ""
     
     if not name:
         return ""
@@ -1012,8 +1022,18 @@ def normalize_document(doc_number: str) -> str:
     Normalize a document number for consistent storage and searching.
     
     Removes spaces, dashes, dots, and converts to uppercase.
+    
+    Args:
+        doc_number: The document number to normalize (can be None)
+        
+    Returns:
+        Normalized document number string, or empty string if doc_number is None/empty
     """
     import re
+    
+    # Explicitly handle None input
+    if doc_number is None:
+        return ""
     
     if not doc_number:
         return ""

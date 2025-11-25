@@ -1,0 +1,36 @@
+Individuals
+Permanent reference number: indicate which sanctions regime concerns respective names, for example, permanent reference numbers starting with “QD” refer to the Al-Qaida Sanctions regime whereas permanent reference numbers starting with CF refer to names listed under the Security Council sanctions regime concerning the Central African Republic. The following letter “i” refers to individuals and “e” to entities (kindly see the table below).
+
+Referencing System for Individuals
+Permanent reference numbers	Two Digit Country Code	Committee
+QDi.001	non-State entity	1267/1989
+IQi.001	IQ	1518 (2003)
+CDi.001	CD	1533 (2004)
+SDi.001	SD	1591 (2005)
+KPi.001	KP	1718 (2006)
+IRi.001	IR	1737 (2006)
+LYi.001	LY	1970 (2011)
+TAi.001	non-State entity	1988 (2011)
+GBi.001	GB	2048 (2012)
+YEi.001	YE	2140 (2014)
+SSi.001	SS	2206 (2015)
+HTi.001 	HT	2653 (2022)
+SOi.001	SO	2713 (2023)
+CFi.001	CF	2745(2024)
+
+Entities
+Permanent reference number. Similar to the reference system for individuals (see table below):
+
+Referencing System for Entities
+Permanent reference number	Two Digit Country Code	Committee
+QDe.001	non-State entity	1267/1989
+IQe.001	IQ	1518 (2003)
+CDe.001	CD	1533 (2004)
+KPe.001	KP	1718 (2006)
+IRe.001	ir	1737 (2006)
+LYe.001	LY	1970 (2011)
+TAe.001	non-State entity	1988 (2011)
+YEe.001	YE	2140 (2014)
+HTe.001	HT	2653 (2022)
+SOe.001	SO	2713 (2023)
+CFe.001	CF	2745 (2024)

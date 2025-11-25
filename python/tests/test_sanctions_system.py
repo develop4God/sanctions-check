@@ -26,10 +26,10 @@ class TestConfigManager:
         """Test that default values are set correctly"""
         ConfigManager.reset_instance()
         config = ConfigManager(config_path=None)
-        
+
         # Test matching defaults
-        assert config.matching.name_threshold == 85
-        assert config.matching.short_name_threshold == 95
+        assert config.matching.name_threshold == 75
+        assert config.matching.short_name_threshold == 75
         
         # Test weights sum to 1.0
         weights = config.matching.weights

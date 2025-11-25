@@ -615,14 +615,12 @@ class ConstanciaReportGenerator:
                         <div><strong>{{ match.source }}</strong></div>
 
                         <div class="info-label">Identificación:</div>
-                        <div>
-                            <span class="hash" style="font-size:1.2em;font-weight:bold;">
-                                {% if match.identifications %}
-                                    {{ match.identifications | map(attribute='number') | select('string') | join(', ') }}
-                                {% else %}
-                                    <span style="color:#e74c3c;">No disponible en la lista</span>
-                                {% endif %}
-                            </span>
+                        <div style="font-size:1.2em;font-weight:bold;">
+                            {% if match.identifications %}
+                                {{ match.identifications | map(attribute='number') | select('string') | join(', ') }}
+                            {% else %}
+                                <span style="color:#e74c3c;">No disponible en la lista</span>
+                            {% endif %}
                         </div>
                     
                         {% if match.last_name %}

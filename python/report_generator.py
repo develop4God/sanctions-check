@@ -603,7 +603,7 @@ class ConstanciaReportGenerator:
             
             {% for match in result.matches %}
                 <div class="match-card">
-                    <div class="match-score">{{ match.match_score }}%</div>
+                    <div class="match-score">{{ '%.2f' % match.match_score }}%</div>
                     <h3 style="color: #e74c3c; margin-bottom: 10px;">{{ match.matched_name }}</h3>
                 
                     <div class="info-grid" style="margin-top: 15px;">
@@ -614,7 +614,7 @@ class ConstanciaReportGenerator:
                         <div><strong>{{ match.source }}</strong></div>
                     
                         <div class="info-label">ID:</div>
-                        <div class="hash">{{ match.entity_id if match.entity_id else 'No Ingresado' }}</div>
+                        <div class="hash" style="font-size:1.2em;font-weight:bold;">{{ match.entity_id if match.entity_id else 'No Ingresado' }}</div>
                     
                         <div class="info-label">Programa:</div>
                         <div>{{ match.program or 'N/A' }}</div>

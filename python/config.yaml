@@ -6,19 +6,19 @@
 # Matching Configuration
 matching:
   # Default name match threshold (0-100)
-  name_threshold: 85
+  name_threshold: 75
   
   # Stricter threshold for short names (<=2 words or <10 chars)
-  short_name_threshold: 95
+  short_name_threshold: 75
   
   # Adaptive thresholds by Unicode script
   # Applied when allow_unicode_names is true
   adaptive_thresholds:
     enabled: true
-    chinese: 85        # Chinese 2-char names (李明) are valid
-    arabic: 90         # Arabic mononyms (محمد) are valid
-    cyrillic: 90       # Cyrillic names (Владимир) are valid
-    latin_initials: 98 # English 2-char initials (J.D.) are suspicious
+    chinese: 75        # Chinese 2-char names (李明) are valid
+    arabic: 75         # Arabic mononyms (محمد) are valid
+    cyrillic: 75       # Cyrillic names (Владимир) are valid
+    latin_initials: 75 # English 2-char initials (J.D.) are suspicious
   
   # Common names requiring extra validation (document or DOB match)
   common_names:
@@ -37,11 +37,11 @@ matching:
     
   # Scoring weights for multi-layer matching
   weights:
-    name: 0.40
-    document: 0.30
-    dob: 0.15
-    nationality: 0.10
-    address: 0.05
+    name: 1.0         # Name similarity weight (main matching factor)
+    document: 0.0     # Document number similarity weight (passport, ID, etc.)
+    dob: 0.0          # Date of birth similarity weight
+    nationality: 0.0  # Nationality similarity weight
+    address: 0.0      # Address similarity weight
     
   # Confidence thresholds per layer
   layers:

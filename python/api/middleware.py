@@ -142,14 +142,15 @@ def setup_cors(app: FastAPI) -> None:
     logger.info(f"[CORS] Configured origins from env: {cors_origins_env}")
     logger.info(f"[CORS] Parsed allowed origins: {allowed_origins}")
 
-    # SOLUCIÓN TEMPORAL: Usar allow_origins=["*"] para depurar
-    # Si esto funciona, el problema está en el regex
-    # TODO: Cambiar a configuración segura después de confirmar que funciona
-    logger.info("[CORS] Using allow_origins=['*'] for debugging")
+    # CORS seguro: solo dominios de producción
+    # IMPORTANTE: Si cambias la URL del frontend, debes actualizar esta lista
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,  # No se puede usar credentials con "*"
+        allow_origins=[
+            "https://amiable-love-production.up.railway.app",
+            "https://sdncheck-production.up.railway.app"
+        ],
+        allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
         expose_headers=["X-Request-ID", "X-Processing-Time-MS"],

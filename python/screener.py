@@ -290,6 +290,8 @@ class EnhancedSanctionsScreener:
         # Reports directory for saving reports
         self.reports_dir = Path(self.config.reporting.output_directory)
         self.reports_dir.mkdir(exist_ok=True)
+        logger.info(f"[DIAG] Screener initialized with data_dir: {self.data_dir}")
+        logger.info(f"[DIAG] Directory exists: {self.data_dir.exists()} | Contents: {list(self.data_dir.iterdir()) if self.data_dir.exists() else 'N/A'}")
 
     @staticmethod
     def test_postgres_connection():
@@ -345,15 +347,19 @@ class EnhancedSanctionsScreener:
             Number of entities loaded
         """
         xml_file = self.data_dir / "SDN_ENHANCED.XML"
+        logger.info(f"[DIAG] Loading OFAC XML from: {xml_file}")
         if not xml_file.exists():
-            logger.warning(f"⚠ OFAC file not found: {xml_file}")
+            logger.error(f"[DIAG] OFAC XML file not found: {xml_file}")
             return 0
 
+        logger.info(f"[DIAG] OFAC XML file size: {xml_file.stat().st_size} bytes")
         # Extract namespace dynamically
         ns = self._extract_namespace(xml_file)
 
+        logger.info(f"[DIAG] Namespace extracted: {ns}")
         # Use secure XML parsing to prevent XXE attacks
         tree, root = secure_parse(xml_file)
+        logger.info(f"[DIAG] XML parsed, starting entity extraction...")
         count = 0
 
         for entity_elem in root.findall(f".//{ns}entity"):

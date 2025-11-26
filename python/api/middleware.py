@@ -145,17 +145,10 @@ def setup_cors(app: FastAPI) -> None:
     # CORS seguro: solo dominios de producción
     # IMPORTANTE: Si cambias la URL del frontend, debes actualizar esta lista
     # Permitir solo dominios seguros en producción
-    allowed_origins = [
-        "https://sdncheck-production.up.railway.app",
-        "https://sdncheck.app",
-        "https://www.sdncheck.app",
-    ]
-    # Para desarrollo local, permitir localhost
-    if os.getenv("ENV", "production") == "development" or os.getenv("API_ALLOW_LOCAL", "false") == "true":
-        allowed_origins.append("http://localhost:3000")
+    # TEMPORAL: Permitir todos los orígenes para pruebas
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=allowed_origins,
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

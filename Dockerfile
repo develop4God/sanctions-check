@@ -57,7 +57,6 @@ COPY python/database/ ./database/
 COPY python/logs/ ./logs/
 COPY python/reports/ ./reports/
 COPY python/audit_log/ ./audit_log/
-COPY python/__pycache__/ ./__pycache__/
 COPY scripts/ ../scripts/
 
 # Set permissions

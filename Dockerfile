@@ -54,7 +54,6 @@ COPY python/xml_utils.py ./xml_utils.py
 COPY python/alembic.ini ./alembic.ini
 COPY python/alembic/ ./alembic/
 COPY python/database/ ./database/
-COPY python/logs/ ./logs/
 COPY scripts/ ../scripts/
 
 # Set permissions

@@ -355,21 +355,23 @@ class EnhancedSanctionsScreener:
         logger.info(f"[DIAG] OFAC XML file size: {xml_file.stat().st_size} bytes")
         # Extract namespace dynamically
         ns = self._extract_namespace(xml_file)
-
         logger.info(f"[DIAG] Namespace extracted: {ns}")
-        # Use secure XML parsing to prevent XXE attacks
-        tree, root = secure_parse(xml_file)
-        logger.info(f"[DIAG] XML parsed, starting entity extraction...")
         count = 0
-
-        for entity_elem in root.findall(f".//{ns}entity"):
-            entity = self._parse_ofac_entity(entity_elem, ns)
-            if entity:
-                self.entities.append(entity)
-                self._index_documents(entity)
-                count += 1
-
-        logger.info(f"✓ Loaded {count} OFAC entities")
+        try:
+            # Use iterparse to process entities one by one and free memory
+            context = etree.iterparse(str(xml_file), events=("end",))
+            for event, elem in context:
+                if elem.tag == f"{ns}entity":
+                    entity = self._parse_ofac_entity(elem, ns)
+                    if entity:
+                        self.entities.append(entity)
+                        self._index_documents(entity)
+                        count += 1
+                    elem.clear()  # Free memory
+            del context
+        except Exception as e:
+            logger.error(f"[DIAG] Error during streaming parse: {e}")
+        logger.info(f"✓ Loaded {count} OFAC entities (streaming parse)")
         return count
 
     def _extract_namespace(self, xml_path: Path) -> str:

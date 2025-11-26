@@ -50,15 +50,14 @@ ENV PATH=/home/appuser/.local/bin:$PATH
 # Environment variables (override in docker-compose or kubernetes)
     # ...existing code...
 
-# Expose API port
-ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 API_HOST=0.0.0.0 API_PORT=8080
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 API_HOST=0.0.0.0
 
-# Expose API port
-EXPOSE 8080
+# Use Railway's PORT variable
+EXPOSE ${PORT}
 
-# Health check
+# Health check uses PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${API_PORT}/api/v1/health || exit 1
+    CMD curl -f http://localhost:${PORT}/api/v1/health || exit 1
 
-# Default command - Run the FastAPI server with uvicorn
-CMD ["python", "-m", "uvicorn", "python.api.server:app", "--host", "0.0.0.0", "--port", "8080"]
+# Default command - Run the FastAPI server with uvicorn using PORT
+CMD ["python", "-m", "uvicorn", "python.api.server:app", "--host", "0.0.0.0", "--port", "${PORT}"]

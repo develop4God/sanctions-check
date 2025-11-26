@@ -15,12 +15,14 @@ from typing import Optional, Any, Tuple
 # Try lxml first for better security features, fall back to defusedxml or stdlib
 try:
     from lxml import etree as lxml_etree
+
     HAS_LXML = True
 except ImportError:
     HAS_LXML = False
 
 try:
     import defusedxml.ElementTree as defused_ET
+
     HAS_DEFUSEDXML = True
 except ImportError:
     HAS_DEFUSEDXML = False
@@ -32,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def get_secure_parser():
     """Get a secure XML parser that prevents XXE attacks
-    
+
     Returns:
         Secure parser object or None if using stdlib
     """
@@ -43,20 +45,20 @@ def get_secure_parser():
             no_network=True,
             dtd_validation=False,
             load_dtd=False,
-            huge_tree=False
+            huge_tree=False,
         )
     return None
 
 
 def secure_parse(xml_path: Path) -> Tuple[Any, Any]:
     """Securely parse an XML file, preventing XXE attacks
-    
+
     Args:
         xml_path: Path to XML file
-        
+
     Returns:
         Tuple of (tree, root) element
-        
+
     Raises:
         ValueError: If XML is invalid or contains dangerous content
     """
@@ -70,19 +72,23 @@ def secure_parse(xml_path: Path) -> Tuple[Any, Any]:
         return tree, tree.getroot()
     else:
         # stdlib - limited protection, log warning
-        logger.warning("Using stdlib XML parser - consider installing lxml or defusedxml for better security")
+        logger.warning(
+            "Using stdlib XML parser - consider installing lxml or defusedxml for better security"
+        )
         tree = ET.parse(xml_path)
         return tree, tree.getroot()
 
 
-def secure_iterparse(xml_path: Path, events: Tuple[str, ...] = ('end',), tag: Optional[str] = None):
+def secure_iterparse(
+    xml_path: Path, events: Tuple[str, ...] = ("end",), tag: Optional[str] = None
+):
     """Securely iterparse an XML file for memory-efficient processing
-    
+
     Args:
         xml_path: Path to XML file
         events: Tuple of events to listen for
         tag: Optional tag to filter for (lxml only)
-        
+
     Returns:
         Iterator over (event, element) tuples
     """
@@ -97,56 +103,58 @@ def secure_iterparse(xml_path: Path, events: Tuple[str, ...] = ('end',), tag: Op
 
 def sanitize_for_logging(text: str) -> str:
     """Sanitize user input for safe logging, preventing log injection
-    
+
     Removes newlines, carriage returns, control characters, and
-    Unicode formatting characters that could be used to inject 
+    Unicode formatting characters that could be used to inject
     fake log entries or hide malicious content.
-    
+
     Args:
         text: User input text
-        
+
     Returns:
         Sanitized text safe for logging
     """
     if not text:
-        return ''
+        return ""
     # Remove newlines, carriage returns, and other control characters (C0, C1)
-    sanitized = re.sub(r'[\r\n\x00-\x1f\x7f-\x9f]', ' ', str(text))
+    sanitized = re.sub(r"[\r\n\x00-\x1f\x7f-\x9f]", " ", str(text))
     # Remove Unicode formatting characters (zero-width, BOM, line/paragraph separators)
     # \u200B = zero-width space, \uFEFF = BOM, \u2028 = line separator, \u2029 = paragraph separator
     # \u200C-\u200F = various zero-width and direction markers
-    sanitized = re.sub(r'[\u200B-\u200F\u2028\u2029\uFEFF]', '', sanitized)
+    sanitized = re.sub(r"[\u200B-\u200F\u2028\u2029\uFEFF]", "", sanitized)
     # Collapse multiple spaces
-    sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+    sanitized = re.sub(r"\s+", " ", sanitized).strip()
     # Truncate to reasonable length
     return sanitized[:500] if len(sanitized) > 500 else sanitized
 
 
 def extract_xml_namespace(xml_path: Path) -> str:
     """Dynamically extract namespace from XML root element
-    
+
     This function reads the first element of an XML file to determine
     its namespace. It handles both namespaced and non-namespaced XML files.
-    
+
     Args:
         xml_path: Path to the XML file
-        
+
     Returns:
         Namespace string with curly braces (e.g., '{http://...}') or empty string
-        
+
     Example:
         >>> ns = extract_xml_namespace(Path('sdn_enhanced.xml'))
         >>> print(ns)
         '{https://sanctionslistservice.ofac.treas.gov/api/...}'
     """
     try:
-        with open(xml_path, 'rb') as f:
-            for event, elem in ET.iterparse(f, events=('start',)):
+        with open(xml_path, "rb") as f:
+            for event, elem in ET.iterparse(f, events=("start",)):
                 tag = elem.tag
-                if tag.startswith('{'):
-                    ns_end = tag.index('}')
-                    namespace = tag[:ns_end + 1]
-                    logger.debug(f"Extracted namespace from {xml_path.name}: {namespace}")
+                if tag.startswith("{"):
+                    ns_end = tag.index("}")
+                    namespace = tag[: ns_end + 1]
+                    logger.debug(
+                        f"Extracted namespace from {xml_path.name}: {namespace}"
+                    )
                     return namespace
                 break
     except FileNotFoundError:
@@ -155,17 +163,17 @@ def extract_xml_namespace(xml_path: Path) -> str:
         logger.error(f"XML parse error in {xml_path}: {e}")
     except Exception as e:
         logger.warning(f"Could not extract namespace from {xml_path}: {e}")
-    
-    return ''
+
+    return ""
 
 
 def get_text_from_element(elem: Any, path: str) -> Optional[str]:
     """Safely get text content from an XML element
-    
+
     Args:
         elem: Parent XML element
         path: XPath-style path to child element
-        
+
     Returns:
         Stripped text content or None if element not found or empty
     """
@@ -175,28 +183,28 @@ def get_text_from_element(elem: Any, path: str) -> Optional[str]:
     return None
 
 
-def count_elements(xml_path: Path, element_name: str, namespace: str = '') -> int:
+def count_elements(xml_path: Path, element_name: str, namespace: str = "") -> int:
     """Count occurrences of an element in an XML file
-    
+
     Uses iterparse for memory-efficient counting of large files.
-    
+
     Args:
         xml_path: Path to XML file
         element_name: Name of element to count
         namespace: XML namespace (with curly braces)
-        
+
     Returns:
         Count of elements found
     """
     count = 0
-    full_tag = f'{namespace}{element_name}'
-    
+    full_tag = f"{namespace}{element_name}"
+
     try:
-        for event, elem in ET.iterparse(xml_path, events=('end',)):
+        for event, elem in ET.iterparse(xml_path, events=("end",)):
             if elem.tag == full_tag:
                 count += 1
                 elem.clear()  # Free memory
     except Exception as e:
         logger.error(f"Error counting elements in {xml_path}: {e}")
-    
+
     return count

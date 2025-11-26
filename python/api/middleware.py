@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 
 # Default allowed origins for localhost development
 DEFAULT_CORS_ORIGINS = [
-    "http://localhost:3000",   # Common Electron dev port
-    "http://localhost:5173",   # Vite dev port
-    "http://localhost:8080",   # Common dev port
-    "http://localhost:8000",   # FastAPI default port
+    "http://localhost:3000",  # Common Electron dev port
+    "http://localhost:5173",  # Vite dev port
+    "http://localhost:8080",  # Common dev port
+    "http://localhost:8000",  # FastAPI default port
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
@@ -35,40 +35,40 @@ DEFAULT_CORS_ORIGINS = [
 
 def _build_cors_regex_pattern(allowed_origins: List[str]) -> tuple:
     """Build regex pattern for CORS from allowed origins list.
-    
+
     Args:
         allowed_origins: List of allowed origins (may include wildcards like *.railway.app)
-    
+
     Returns:
         Tuple of (combined_regex_pattern or None, exact_origins list)
     """
     regex_patterns = []
     exact_origins = []
-    
+
     for origin in allowed_origins:
-        if '*.up.railway.app' in origin:
+        if "*.up.railway.app" in origin:
             # Convert wildcard to regex pattern for Railway subdomains
-            regex_patterns.append(r'https://[\w-]+\.up\.railway\.app')
-        elif '*.railway.app' in origin:
-            regex_patterns.append(r'https://[\w-]+\.railway\.app')
+            regex_patterns.append(r"https://[\w-]+\.up\.railway\.app")
+        elif "*.railway.app" in origin:
+            regex_patterns.append(r"https://[\w-]+\.railway\.app")
         else:
             exact_origins.append(origin)
-    
+
     if not regex_patterns:
         return None, exact_origins
-    
+
     # Combine regex patterns
-    combined_regex = '|'.join(f'({p})' for p in regex_patterns)
+    combined_regex = "|".join(f"({p})" for p in regex_patterns)
     if exact_origins:
-        exact_escaped = '|'.join(re.escape(o) for o in exact_origins)
-        combined_regex = f'({combined_regex})|({exact_escaped})'
-    
+        exact_escaped = "|".join(re.escape(o) for o in exact_origins)
+        combined_regex = f"({combined_regex})|({exact_escaped})"
+
     return combined_regex, exact_origins
 
 
 def setup_cors(app: FastAPI) -> None:
     """Configure CORS middleware for the application.
-    
+
     Restricts origins to localhost for security.
     Origins can be customized via CORS_ORIGINS environment variable
     (comma-separated list of allowed origins).
@@ -80,13 +80,13 @@ def setup_cors(app: FastAPI) -> None:
         allowed_origins = [origin.strip() for origin in cors_origins_env.split(",")]
     else:
         allowed_origins = DEFAULT_CORS_ORIGINS
-    
+
     # Check if any wildcard patterns are present
-    has_wildcard = any('*' in origin for origin in allowed_origins)
-    
+    has_wildcard = any("*" in origin for origin in allowed_origins)
+
     if has_wildcard:
         combined_regex, exact_origins = _build_cors_regex_pattern(allowed_origins)
-        
+
         if combined_regex:
             app.add_middleware(
                 CORSMiddleware,
@@ -118,55 +118,55 @@ def setup_cors(app: FastAPI) -> None:
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware for logging all requests with sanitized inputs.
-    
+
     Follows security patterns from security_logger.py.
     """
-    
+
     async def dispatch(self, request: Request, call_next: Callable):
         """Process request and log details."""
         start_time = time.time()
         request_id = request.headers.get("X-Request-ID", str(time.time_ns()))
-        
+
         # Store request ID for later use
         request.state.request_id = request_id
         request.state.start_time = start_time
-        
+
         # Log incoming request (sanitize path to prevent log injection)
         sanitized_path = sanitize_for_logging(str(request.url.path))
         logger.info(
             "Request: method=%s path=%s request_id=%s",
             request.method,
             sanitized_path,
-            request_id
+            request_id,
         )
-        
+
         try:
             response = await call_next(request)
-            
+
             # Calculate processing time
             processing_time_ms = int((time.time() - start_time) * 1000)
-            
+
             # Add custom headers
             response.headers["X-Request-ID"] = request_id
             response.headers["X-Processing-Time-MS"] = str(processing_time_ms)
-            
+
             # Log response
             logger.info(
                 "Response: status=%d processing_time_ms=%d request_id=%s",
                 response.status_code,
                 processing_time_ms,
-                request_id
+                request_id,
             )
-            
+
             return response
-            
+
         except Exception as exc:
             processing_time_ms = int((time.time() - start_time) * 1000)
             logger.error(
                 "Request failed: error=%s processing_time_ms=%d request_id=%s",
                 sanitize_for_logging(str(exc)),
                 processing_time_ms,
-                request_id
+                request_id,
             )
             raise
 
@@ -176,64 +176,61 @@ def create_error_response(
     message: str,
     status_code: int = 500,
     field: str = None,
-    suggestion: str = None
+    suggestion: str = None,
 ) -> JSONResponse:
     """Create a standardized error response.
-    
+
     Args:
         code: Error code for programmatic handling
         message: Human-readable message
         status_code: HTTP status code
         field: Field that caused the error (optional)
         suggestion: How to fix the error (optional)
-    
+
     Returns:
         JSONResponse with standardized error format
     """
     error_detail = {
         "code": code,
         "message": message,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
-    
+
     if field:
         error_detail["field"] = field
     if suggestion:
         error_detail["suggestion"] = suggestion
-    
-    return JSONResponse(
-        status_code=status_code,
-        content={"error": error_detail}
-    )
+
+    return JSONResponse(status_code=status_code, content={"error": error_detail})
 
 
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Global exception handler for unhandled errors.
-    
+
     Sanitizes error messages to prevent information leakage.
-    
+
     Args:
         request: FastAPI request object
         exc: Exception that was raised
-    
+
     Returns:
         Standardized error response
     """
     # Import here to avoid circular imports
     from screener import InputValidationError
     from config_manager import ConfigurationError
-    
+
     # Get request ID for correlation
-    request_id = getattr(request.state, 'request_id', 'unknown')
-    
+    request_id = getattr(request.state, "request_id", "unknown")
+
     # Log the full error for debugging
     logger.error(
         "Unhandled exception: type=%s message=%s request_id=%s",
         type(exc).__name__,
         sanitize_for_logging(str(exc)),
-        request_id
+        request_id,
     )
-    
+
     # Handle specific exception types
     if isinstance(exc, InputValidationError):
         return create_error_response(
@@ -241,54 +238,54 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
             message=str(exc),
             status_code=422,
             field=exc.field,
-            suggestion=exc.suggestion
+            suggestion=exc.suggestion,
         )
-    
+
     if isinstance(exc, ConfigurationError):
         return create_error_response(
             code="CONFIGURATION_ERROR",
             message="Service configuration is invalid. Please contact administrator.",
-            status_code=503
+            status_code=503,
         )
-    
+
     if isinstance(exc, HTTPException):
         return create_error_response(
             code=f"HTTP_{exc.status_code}",
             message=exc.detail if isinstance(exc.detail, str) else str(exc.detail),
-            status_code=exc.status_code
+            status_code=exc.status_code,
         )
-    
+
     # Generic error - sanitize message to prevent info leakage
     return create_error_response(
         code="INTERNAL_ERROR",
         message="An unexpected error occurred. Please try again later.",
-        status_code=500
+        status_code=500,
     )
 
 
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
     """Handler for HTTP exceptions.
-    
+
     Args:
         request: FastAPI request object
         exc: HTTPException that was raised
-    
+
     Returns:
         Standardized error response
     """
-    request_id = getattr(request.state, 'request_id', 'unknown')
-    
+    request_id = getattr(request.state, "request_id", "unknown")
+
     logger.warning(
         "HTTP exception: status=%d detail=%s request_id=%s",
         exc.status_code,
         sanitize_for_logging(str(exc.detail)),
-        request_id
+        request_id,
     )
-    
+
     return create_error_response(
         code=f"HTTP_{exc.status_code}",
         message=exc.detail if isinstance(exc.detail, str) else str(exc.detail),
-        status_code=exc.status_code
+        status_code=exc.status_code,
     )
 
 

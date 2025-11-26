@@ -391,8 +391,13 @@ class ScreeningRepository:
         ip_address: Optional[str] = None
     ) -> ScreeningRequest:
         """
-        Create a new screening request.
-        
+            query = query.options(
+                joinedload(SanctionedEntity.aliases),
+                joinedload(SanctionedEntity.documents),
+                joinedload(SanctionedEntity.addresses)
+            )
+            result = self.session.execute(query.distinct())
+            return list(result.scalars().all())
         Args:
             input_data: Input data for screening
             request_type: "single" or "bulk"

@@ -644,15 +644,42 @@ class ScreeningRequest(Base, TimestampMixin):
         lazy="selectin"
     )
     
+    created_at_trunc: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        server_default=None,
+        index=True
+    )
+
     __table_args__ = (
         Index('ix_screening_request_date', 'created_at'),
         Index('ix_screening_request_status_date', 'status', 'created_at'),
         Index('ix_screening_request_analyst', 'analyst_id', 'created_at'),
-        UniqueConstraint('screened_name', 'screened_document', 'created_at', name='uq_screening_unique'),
+        UniqueConstraint('screened_name', 'screened_document', 'analyst_id', 'created_at_trunc', name='uq_screening_unique'),
     )
     
     def __repr__(self) -> str:
         return f"<ScreeningRequest(id={self.id}, name='{self.screened_name}', status={self.status})>"
+
+# Automatically set created_at_trunc to created_at truncated to the second
+from sqlalchemy import event
+from sqlalchemy.orm import Mapper
+import math
+
+def truncate_to_second(dt):
+    if dt is None:
+        return None
+    return dt.replace(microsecond=0)
+
+@event.listens_for(ScreeningRequest, 'before_insert')
+def before_insert(mapper, connection, target):
+    if target.created_at:
+        target.created_at_trunc = truncate_to_second(target.created_at)
+
+@event.listens_for(ScreeningRequest, 'before_update')
+def before_update(mapper, connection, target):
+    if target.created_at:
+        target.created_at_trunc = truncate_to_second(target.created_at)
 
 
 class ScreeningResult(Base, TimestampMixin):

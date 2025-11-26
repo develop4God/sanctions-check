@@ -100,13 +100,13 @@ def _build_cors_regex_pattern(allowed_origins: List[str]) -> tuple:
     exact_origins = []
 
     for origin in allowed_origins:
-        if "*.up.railway.app" in origin:
-            # Convert wildcard to regex pattern for Railway subdomains
+        # Procesar wildcard para *.up.railway.app
+        if origin.strip() == "https://*.up.railway.app":
             regex_patterns.append(r"https://[\w-]+\.up\.railway\.app")
-        elif "*.railway.app" in origin:
+        elif origin.strip() == "https://*.railway.app":
             regex_patterns.append(r"https://[\w-]+\.railway\.app")
         else:
-            exact_origins.append(origin)
+            exact_origins.append(origin.strip())
 
     if not regex_patterns:
         return None, exact_origins

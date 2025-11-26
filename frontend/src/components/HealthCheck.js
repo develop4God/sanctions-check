@@ -71,7 +71,7 @@ function HealthCheck({ onHealthUpdate }) {
           <span className="health-stat">
             <strong>{health.entities_loaded?.toLocaleString()}</strong> entidades
           </span>
-          {health.data_age_days !== null && (
+          {health.data_age_days != null && (
             <span className="health-stat">
               Datos: <strong>{health.data_age_days}</strong> días
             </span>

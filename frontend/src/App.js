@@ -52,12 +52,17 @@ function App() {
       if (!response.ok) {
         let errorMessage = `Error del servidor (${response.status})`;
         try {
-          const errorData = await response.json();
+          // Clonar la respuesta para poder leerla múltiples veces si es necesario
+          const errorData = await response.clone().json();
           errorMessage = errorData.detail || errorData.message || errorMessage;
         } catch {
-          // Si no es JSON, usar el texto
-          const errorText = await response.text();
-          if (errorText) errorMessage = errorText;
+          // Si no es JSON, intentar leer como texto
+          try {
+            const errorText = await response.text();
+            if (errorText) errorMessage = errorText;
+          } catch {
+            // Ignorar errores al leer el texto
+          }
         }
         throw new Error(errorMessage);
       }

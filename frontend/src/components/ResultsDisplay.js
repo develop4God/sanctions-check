@@ -282,7 +282,27 @@ ResultsDisplay.propTypes = {
 };
 
 MatchCard.propTypes = {
-  match: PropTypes.object.isRequired,
+  match: PropTypes.shape({
+    entity: PropTypes.shape({
+      name: PropTypes.string,
+      source: PropTypes.string,
+      program: PropTypes.string,
+      type: PropTypes.string,
+      countries: PropTypes.array,
+      aliases: PropTypes.array
+    }),
+    confidence: PropTypes.shape({
+      overall: PropTypes.number,
+      name: PropTypes.number,
+      document: PropTypes.number,
+      dob: PropTypes.number,
+      nationality: PropTypes.number,
+      address: PropTypes.number
+    }),
+    recommendation: PropTypes.string,
+    flags: PropTypes.array,
+    matched_name: PropTypes.string
+  }).isRequired,
   index: PropTypes.number.isRequired
 };
 

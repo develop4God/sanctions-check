@@ -64,6 +64,9 @@ function ScreeningForm({ onSubmit, loading, disabled }) {
     if (formData.date_of_birth) {
       const dob = new Date(formData.date_of_birth);
       const today = new Date();
+      // Comparar solo fechas (sin hora) para evitar problemas de timezone
+      dob.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
       if (dob > today) {
         newErrors.date_of_birth = 'La fecha no puede ser futura';
       }

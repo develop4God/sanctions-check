@@ -98,8 +98,14 @@ function BulkScreening({ disabled }) {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Error del servidor (${response.status}): ${errorText}`);
+        let errorMessage = `Error del servidor (${response.status})`;
+        try {
+          const errorText = await response.text();
+          if (errorText) errorMessage = `${errorMessage}: ${errorText}`;
+        } catch {
+          // Ignorar error al leer texto
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -124,6 +130,18 @@ function BulkScreening({ disabled }) {
     }
   };
 
+  // Escapar campo CSV (manejar comas, comillas, saltos de línea)
+  const escapeCSVField = (field) => {
+    if (field === null || field === undefined) return '';
+    const str = String(field);
+    // Si contiene comas, comillas o saltos de línea, encerrar en comillas
+    if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+      // Escapar comillas duplicándolas
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
   // Exportar resultados
   const exportResults = () => {
     if (!results?.results) return;
@@ -138,9 +156,9 @@ function BulkScreening({ disabled }) {
         : 'APPROVE';
       
       csvRows.push([
-        r.input?.nombre || '',
-        r.input?.cedula || '',
-        r.input?.pais || '',
+        escapeCSVField(r.input?.nombre || ''),
+        escapeCSVField(r.input?.cedula || ''),
+        escapeCSVField(r.input?.pais || ''),
         r.is_hit ? 'COINCIDENCIA' : 'LIMPIO',
         r.hit_count || 0,
         recommendation

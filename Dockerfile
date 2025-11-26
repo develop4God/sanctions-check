@@ -18,10 +18,9 @@ COPY python/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Stage 2: Production image
 FROM python:3.11-slim
 
-WORKDIR /app
+WORKDIR /app/python
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -60,4 +59,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT}/api/v1/health || exit 1
 
 # Default command - Run the FastAPI server with uvicorn using PORT
-CMD ["sh", "-c", "echo PORT is $PORT && python -m uvicorn python.api.server:app --host 0.0.0.0 --port $PORT"]
+CMD ["sh", "-c", "python -m uvicorn api.server:app --host 0.0.0.0 --port $PORT"]

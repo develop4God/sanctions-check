@@ -65,7 +65,6 @@ reporting:
         assert config.matching.weights['name'] == 0.50
         assert config.reporting.include_low_confidence is True
     
-    @pytest.mark.skip(reason="Config validation not yet implemented in production code (TODO in _validate method)")
     def test_invalid_weights_validation(self, tmp_path):
         """Test that invalid weights sum raises error"""
         config_content = """
@@ -84,7 +83,6 @@ matching:
         with pytest.raises(ConfigurationError):
             ConfigManager(str(config_file))
     
-    @pytest.mark.skip(reason="Config validation not yet implemented in production code (TODO in _validate method)")
     def test_invalid_thresholds_order(self, tmp_path):
         """Test that invalid threshold order raises error"""
         config_content = """

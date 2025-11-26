@@ -344,7 +344,7 @@ class EnhancedSanctionsScreener:
         Returns:
             Number of entities loaded
         """
-        xml_file = self.data_dir / "sdn_enhanced.xml"
+        xml_file = self.data_dir / "SDN_ENHANCED.XML"
         if not xml_file.exists():
             logger.warning(f"⚠ OFAC file not found: {xml_file}")
             return 0

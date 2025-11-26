@@ -498,13 +498,8 @@ class EnhancedSanctionsDownloader:
                 zf.extract(xml_name, self.data_dir)
 
                 extracted_path = self.data_dir / xml_name
-                final_path = self.data_dir / "sdn_enhanced.xml"
-
-                if extracted_path.exists() and extracted_path != final_path:
-                    extracted_path.rename(final_path)
-
-                logger.info(f"✓ Extracted OFAC XML: {final_path}")
-                return final_path
+                logger.info(f"✓ Extracted OFAC XML: {extracted_path}")
+                return extracted_path
 
         except zipfile.BadZipFile as e:
             logger.error(f"✗ Invalid ZIP file: {e}")

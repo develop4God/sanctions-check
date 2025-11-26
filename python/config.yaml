@@ -194,5 +194,5 @@ database:
   user: sdn_user
   # ⚠️ This is a development default only - never use in production!
   # Set DB_PASSWORD environment variable for actual deployments.
-  password: "${DB_PASSWORD:-sdn_password}"
+  password: sdn_password
   name: sdn_database

@@ -278,10 +278,14 @@ class EnhancedSanctionsScreener:
 
     @staticmethod
     def test_postgres_connection():
-        """Test connection to PostgreSQL using environment variables via config.
+        """Test connection to PostgreSQL using configuration settings.
         
-        Environment variables DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
-        take precedence over config.yaml values.
+        The ConfigManager automatically loads database settings with environment
+        variables taking precedence over config.yaml values (DB_HOST, DB_PORT,
+        DB_USER, DB_PASSWORD, DB_NAME).
+        
+        Returns:
+            bool: True if connection is successful, False otherwise.
         """
         config = get_config()
         db = config.database
@@ -297,10 +301,10 @@ class EnhancedSanctionsScreener:
             cur.execute("SELECT 1;")
             result = cur.fetchone()
             conn.close()
-            print(f"✅ Conexión exitosa a PostgreSQL ({db.host}:{db.port}) - Resultado: {result}")
+            print(f"✅ Connection successful to PostgreSQL ({db.host}:{db.port}) - Result: {result}")
             return True
         except Exception as e:
-            print(f"❌ Error de conexión a PostgreSQL: {e}")
+            print(f"❌ PostgreSQL connection error: {e}")
             return False
     
     def load_ofac(self) -> int:

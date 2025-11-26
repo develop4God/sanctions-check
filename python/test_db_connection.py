@@ -1,27 +1,3 @@
-<<<<<<< HEAD
-import os
-import psycopg2
-
-# Usamos la misma lógica de configuración:
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    # ¡Usa el host localhost:5432 ya que Docker está mapeado aquí!
-    "postgresql://sdn_user:sdn_password@localhost:5432/sdn_database"
-)
-
-def test_connection():
-    try:
-        # Intenta conectar usando la URL
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        
-        # Ejecuta un comando simple para probar
-        cursor.execute("SELECT version();")
-        db_version = cursor.fetchone()
-        
-        print("✅ CONEXIÓN EXITOSA A POSTGRESQL")
-        print(f"Versión de la Base de Datos: {db_version[0]}")
-=======
 #!/usr/bin/env python3
 """
 Database Connection Test Script for SDNCheck
@@ -81,15 +57,36 @@ def test_basic_connection():
         
         cursor.close()
         conn.close()
-        return True
-        
-    except ImportError:
-        print("❌ psycopg2 not installed. Install with: pip install psycopg2-binary")
-        return False
-    except Exception as e:
-        print(f"\n❌ Connection failed: {e}")
-        return False
-
+    password = os.getenv("DB_PASSWORD", "sdn_password")
+    
+    print(f"\n📡 Connecting to: {host}:{port}/{database}")
+    print(f"👤 User: {user}")
+    
+    conn = psycopg2.connect(
+        host=host,
+        port=port,
+        database=database,
+        user=user,
+        password=password
+    )
+    
+    cursor = conn.cursor()
+    cursor.execute("SELECT version();")
+    version = cursor.fetchone()[0]
+    
+    print(f"\n✅ CONNECTION SUCCESSFUL TO POSTGRESQL")
+    print(f"📊 Database Version: {version}")
+    
+    cursor.close()
+    conn.close()
+    return True
+    
+except ImportError:
+    print("❌ psycopg2 not installed. Install with: pip install psycopg2-binary")
+    return False
+except Exception as e:
+    print(f"\n❌ Connection failed: {e}")
+    return False
 
 def test_sqlalchemy_connection():
     """Test SQLAlchemy connection and ORM setup."""
@@ -119,14 +116,12 @@ def test_sqlalchemy_connection():
         
         close_db()
         return True
-        
     except ImportError as e:
         print(f"⚠️ SQLAlchemy test skipped (import error): {e}")
         return True  # Not a failure, just not available
     except Exception as e:
         print(f"\n❌ SQLAlchemy test failed: {e}")
         return False
-
 
 def test_schema_tables():
     """Verify database schema tables exist."""
@@ -196,33 +191,22 @@ def test_schema_tables():
             print(f"\n📋 Additional tables found:")
             for table in extra_tables:
                 print(f"  ℹ️  {table}")
->>>>>>> 70d22b58b630a6626974c608b3d943dedcd2c2fd
         
         cursor.close()
         conn.close()
         
-<<<<<<< HEAD
-    except Exception as e:
-        print(f"❌ ERROR DE CONEXIÓN: {e}")
-        print("Asegúrate de que 'psycopg2-binary' esté instalado en tu entorno Python.")
-
-if __name__ == "__main__":
-    test_connection()
-=======
         if all_present:
             print(f"\n✅ All {len(expected_tables)} expected tables are present!")
         else:
             print("\n⚠️ Some tables are missing. Run the init script.")
         
         return all_present
-        
     except ImportError:
         print("❌ psycopg2 not installed")
         return False
     except Exception as e:
         print(f"\n❌ Schema verification failed: {e}")
         return False
-
 
 def test_data_sources():
     """Verify initial data is populated."""
@@ -269,11 +253,9 @@ def test_data_sources():
         conn.close()
         
         return len(sources) > 0 and len(programs) > 0
-        
     except Exception as e:
         print(f"\n❌ Data check failed: {e}")
         return False
-
 
 def test_extensions():
     """Verify required PostgreSQL extensions are installed."""
@@ -317,11 +299,9 @@ def test_extensions():
         conn.close()
         
         return all_present
-        
     except Exception as e:
         print(f"\n❌ Extension check failed: {e}")
         return False
-
 
 def main():
     """Run all database tests."""
@@ -357,7 +337,6 @@ def main():
         print("\n⚠️ Some tests failed. Check the output above.")
         return 1
 
-
 if __name__ == "__main__":
     sys.exit(main())
->>>>>>> 70d22b58b630a6626974c608b3d943dedcd2c2fd
+    print("\n" + "=" * 60)

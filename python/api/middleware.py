@@ -32,29 +32,38 @@ DEFAULT_CORS_ORIGINS = [
     "http://127.0.0.1:8000",
 ]
 
-# Railway subdomain pattern for wildcard matching
-RAILWAY_PATTERN = re.compile(r'^https://[\w-]+\.up\.railway\.app$')
 
-
-def is_origin_allowed(origin: str, allowed_origins: List[str]) -> bool:
-    """Check if origin is allowed, supporting wildcards for Railway domains.
+def _build_cors_regex_pattern(allowed_origins: List[str]) -> tuple:
+    """Build regex pattern for CORS from allowed origins list.
     
     Args:
-        origin: The origin to check
         allowed_origins: List of allowed origins (may include wildcards like *.railway.app)
     
     Returns:
-        True if origin is allowed
+        Tuple of (combined_regex_pattern or None, exact_origins list)
     """
-    for allowed in allowed_origins:
-        # Exact match
-        if origin == allowed:
-            return True
-        # Wildcard match for Railway subdomains
-        if '*.up.railway.app' in allowed or '*.railway.app' in allowed:
-            if RAILWAY_PATTERN.match(origin):
-                return True
-    return False
+    regex_patterns = []
+    exact_origins = []
+    
+    for origin in allowed_origins:
+        if '*.up.railway.app' in origin:
+            # Convert wildcard to regex pattern for Railway subdomains
+            regex_patterns.append(r'https://[\w-]+\.up\.railway\.app')
+        elif '*.railway.app' in origin:
+            regex_patterns.append(r'https://[\w-]+\.railway\.app')
+        else:
+            exact_origins.append(origin)
+    
+    if not regex_patterns:
+        return None, exact_origins
+    
+    # Combine regex patterns
+    combined_regex = '|'.join(f'({p})' for p in regex_patterns)
+    if exact_origins:
+        exact_escaped = '|'.join(re.escape(o) for o in exact_origins)
+        combined_regex = f'({combined_regex})|({exact_escaped})'
+    
+    return combined_regex, exact_origins
 
 
 def setup_cors(app: FastAPI) -> None:
@@ -76,27 +85,9 @@ def setup_cors(app: FastAPI) -> None:
     has_wildcard = any('*' in origin for origin in allowed_origins)
     
     if has_wildcard:
-        # For wildcard support, we need to use allow_origin_regex or a custom validator
-        # Create regex pattern for Railway domains
-        regex_patterns = []
-        exact_origins = []
+        combined_regex, exact_origins = _build_cors_regex_pattern(allowed_origins)
         
-        for origin in allowed_origins:
-            if '*.up.railway.app' in origin:
-                # Convert wildcard to regex pattern for Railway subdomains
-                regex_patterns.append(r'https://[\w-]+\.up\.railway\.app')
-            elif '*.railway.app' in origin:
-                regex_patterns.append(r'https://[\w-]+\.railway\.app')
-            else:
-                exact_origins.append(origin)
-        
-        # Combine patterns
-        if regex_patterns:
-            combined_regex = '|'.join(f'({p})' for p in regex_patterns)
-            if exact_origins:
-                exact_escaped = '|'.join(re.escape(o) for o in exact_origins)
-                combined_regex = f'({combined_regex})|({exact_escaped})'
-            
+        if combined_regex:
             app.add_middleware(
                 CORSMiddleware,
                 allow_origin_regex=combined_regex,

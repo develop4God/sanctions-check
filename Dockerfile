@@ -55,7 +55,6 @@ COPY python/alembic.ini ./alembic.ini
 COPY python/alembic/ ./alembic/
 COPY python/database/ ./database/
 COPY python/logs/ ./logs/
-COPY python/reports/ ./reports/
 COPY scripts/ ../scripts/
 
 # Set permissions

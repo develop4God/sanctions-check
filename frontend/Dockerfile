@@ -30,11 +30,11 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 # Copy built assets from builder
 COPY --from=builder /app/build /usr/share/nginx/html
 
-# Railway provides PORT env var - default to 3000 for local dev
-ENV PORT=3000
+# Railway provides PORT env var - default to 8080 for Railway
+ENV PORT=8080
 
-# Expose default port (Railway configures actual port via env)
-EXPOSE 3000
+# Expose port 8080 (Railway default)
+EXPOSE 8080
 
 # Use envsubst to replace PORT in nginx config at runtime
 CMD sh -c "envsubst '\$PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"

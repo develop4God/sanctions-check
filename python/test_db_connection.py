@@ -1,27 +1,3 @@
-<<<<<<< HEAD
-import os
-import psycopg2
-
-# Usamos la misma lógica de configuración:
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    # ¡Usa el host localhost:5432 ya que Docker está mapeado aquí!
-    "postgresql://sdn_user:sdn_password@localhost:5432/sdn_database"
-)
-
-def test_connection():
-    try:
-        # Intenta conectar usando la URL
-        conn = psycopg2.connect(DATABASE_URL)
-        cursor = conn.cursor()
-        
-        # Ejecuta un comando simple para probar
-        cursor.execute("SELECT version();")
-        db_version = cursor.fetchone()
-        
-        print("✅ CONEXIÓN EXITOSA A POSTGRESQL")
-        print(f"Versión de la Base de Datos: {db_version[0]}")
-=======
 #!/usr/bin/env python3
 """
 Database Connection Test Script for SDNCheck
@@ -45,6 +21,7 @@ from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
+
 
 def test_basic_connection():
     """Test basic PostgreSQL connection using psycopg2."""
@@ -98,7 +75,7 @@ def test_sqlalchemy_connection():
     print("=" * 60)
     
     try:
-        from database.connection import init_db, get_db_manager, close_db
+        from database.connection import init_db, close_db
         
         # Initialize database
         db_manager = init_db(echo=False)
@@ -111,7 +88,7 @@ def test_sqlalchemy_connection():
             return False
         
         # Test session
-        with db_manager.session() as session:
+        with db_manager.session_scope() as session:
             from sqlalchemy import text
             result = session.execute(text("SELECT current_database(), current_user;"))
             row = result.fetchone()
@@ -196,19 +173,10 @@ def test_schema_tables():
             print(f"\n📋 Additional tables found:")
             for table in extra_tables:
                 print(f"  ℹ️  {table}")
->>>>>>> 70d22b58b630a6626974c608b3d943dedcd2c2fd
         
         cursor.close()
         conn.close()
         
-<<<<<<< HEAD
-    except Exception as e:
-        print(f"❌ ERROR DE CONEXIÓN: {e}")
-        print("Asegúrate de que 'psycopg2-binary' esté instalado en tu entorno Python.")
-
-if __name__ == "__main__":
-    test_connection()
-=======
         if all_present:
             print(f"\n✅ All {len(expected_tables)} expected tables are present!")
         else:
@@ -360,4 +328,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
->>>>>>> 70d22b58b630a6626974c608b3d943dedcd2c2fd

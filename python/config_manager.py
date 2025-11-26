@@ -1,24 +1,50 @@
+"""
+Configuration Management Module
+Loads and validates configuration from config.yaml
+
+Environment variables take precedence over config.yaml for database settings
+to support Docker and cloud deployment scenarios.
+"""
+
+import os
+import yaml
+import logging
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class DatabaseConfig:
-    """Database configuration"""
+    """Database configuration - environment variables take precedence over config.yaml"""
     host: str = "localhost"
     port: int = 5432
     user: str = "sdn_user"
     password: str = "sdn_password"
     name: str = "sdn_database"
-"""
-Configuration Management Module
-Loads and validates configuration from config.yaml
-"""
-
-import yaml
-import logging
-from pathlib import Path
-from typing import Dict, Any, Optional, List
-
-logger = logging.getLogger(__name__)
+    
+    @classmethod
+    def from_env(cls, yaml_config: Optional[Dict[str, Any]] = None) -> 'DatabaseConfig':
+        """Create DatabaseConfig with environment variables taking precedence over YAML config.
+        
+        Environment Variables:
+            DB_HOST: Database host (overrides yaml 'host')
+            DB_PORT: Database port (overrides yaml 'port')
+            DB_USER: Database user (overrides yaml 'user')
+            DB_PASSWORD: Database password (overrides yaml 'password')
+            DB_NAME: Database name (overrides yaml 'name')
+        """
+        yaml_cfg = yaml_config or {}
+        
+        return cls(
+            host=os.getenv("DB_HOST", yaml_cfg.get('host', 'localhost')),
+            port=int(os.getenv("DB_PORT", yaml_cfg.get('port', 5432))),
+            user=os.getenv("DB_USER", yaml_cfg.get('user', 'sdn_user')),
+            password=os.getenv("DB_PASSWORD", yaml_cfg.get('password', 'sdn_password')),
+            name=os.getenv("DB_NAME", yaml_cfg.get('name', 'sdn_database'))
+        )
 
 
 @dataclass
@@ -209,15 +235,9 @@ class ConfigManager:
         self._validate()
 
     def _parse_database(self) -> None:
-        """Parse database configuration"""
-        cfg = self._raw_config.get('database', {})
-        self.database = DatabaseConfig(
-            host=cfg.get('host', self.database.host),
-            port=cfg.get('port', self.database.port),
-            user=cfg.get('user', self.database.user),
-            password=cfg.get('password', self.database.password),
-            name=cfg.get('name', self.database.name)
-        )
+        """Parse database configuration - environment variables take precedence over config.yaml"""
+        yaml_cfg = self._raw_config.get('database', {})
+        self.database = DatabaseConfig.from_env(yaml_cfg)
     
     def _parse_matching(self) -> None:
         """Parse matching configuration"""

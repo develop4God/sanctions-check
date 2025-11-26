@@ -258,16 +258,31 @@ class EnhancedSanctionsScreener:
         self._document_index: Dict[str, List[Dict[str, Any]]] = {}
         # Common names set (normalized)
         self._common_names: set = set()
+        # Load common names from config
+        for name in self.config.matching.common_names:
+            self._common_names.add(self._normalize_name(name))
         # Screening history for audit trail (with size limit to prevent memory issues)
         self.screening_history: List[Dict[str, Any]] = []
         self._max_history_size = 10000  # Limit to prevent memory issues in long-running apps
         # Reports directory for saving reports
         self.reports_dir = Path(self.config.reporting.output_directory)
         self.reports_dir.mkdir(exist_ok=True)
+        # Audit log subdirectory
+        (self.reports_dir / "audit_log").mkdir(exist_ok=True)
+        
+        logger.info(f"🔧 Enhanced Screener initialized:")
+        logger.info(f"   - Data directory: {self.data_dir}")
+        logger.info(f"   - Name threshold: {self.config.matching.name_threshold}%")
+        logger.info(f"   - Short name threshold: {self.config.matching.short_name_threshold}%")
+        logger.info(f"   - Common names monitored: {len(self._common_names)}")
 
     @staticmethod
     def test_postgres_connection():
-        """Test connection to PostgreSQL using config.yaml parameters"""
+        """Test connection to PostgreSQL using environment variables via config.
+        
+        Environment variables DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
+        take precedence over config.yaml values.
+        """
         config = get_config()
         db = config.database
         try:
@@ -287,24 +302,6 @@ class EnhancedSanctionsScreener:
         except Exception as e:
             print(f"❌ Error de conexión a PostgreSQL: {e}")
             return False
-        for name in self.config.matching.common_names:
-            self._common_names.add(self._normalize_name(name))
-        
-        # Reports directory
-        self.reports_dir = Path("reports")
-        self.reports_dir.mkdir(exist_ok=True)
-        # Audit log subdirectory
-        (self.reports_dir / "audit_log").mkdir(exist_ok=True)
-        
-        # Screening history for audit trail (with size limit to prevent memory issues)
-        self.screening_history: List[Dict[str, Any]] = []
-        self._max_history_size = 10000  # Limit to prevent memory issues in long-running apps
-        
-        logger.info(f"🔧 Enhanced Screener initialized:")
-        logger.info(f"   - Data directory: {self.data_dir}")
-        logger.info(f"   - Name threshold: {self.config.matching.name_threshold}%")
-        logger.info(f"   - Short name threshold: {self.config.matching.short_name_threshold}%")
-        logger.info(f"   - Common names monitored: {len(self._common_names)}")
     
     def load_ofac(self) -> int:
         """Load OFAC entities from XML file

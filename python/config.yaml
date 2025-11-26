@@ -184,9 +184,15 @@ algorithm:
   last_updated: "2024-01-01"
 
 # Database Configuration
+# NOTE: Environment variables take precedence over these values.
+# For Docker/production deployments, set DB_HOST, DB_PORT, DB_NAME, 
+# DB_USER, and DB_PASSWORD environment variables.
+# These are fallback defaults for local development only.
 database:
   host: localhost
   port: 5432
   user: sdn_user
-  password: sdn_password
+  # ⚠️ This is a development default only - never use in production!
+  # Set DB_PASSWORD environment variable for actual deployments.
+  password: "${DB_PASSWORD:-sdn_password}"
   name: sdn_database

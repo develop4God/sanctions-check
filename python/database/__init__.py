@@ -24,7 +24,7 @@ from database.models import (
     ScreeningMatch,
     AuditLog,
     DataSource,
-    DataUpdate
+    DataUpdate,
 )
 from database.connection import (
     # New recommended classes
@@ -59,48 +59,48 @@ from database.monitoring import (
 
 __all__ = [
     # Base
-    'Base',
+    "Base",
     # Entity models
-    'SanctionedEntity',
-    'EntityAlias',
-    'IdentityDocument',
-    'EntityAddress',
-    'EntityFeature',
-    'SanctionsProgram',
-    'EntityProgram',
+    "SanctionedEntity",
+    "EntityAlias",
+    "IdentityDocument",
+    "EntityAddress",
+    "EntityFeature",
+    "SanctionsProgram",
+    "EntityProgram",
     # Screening models
-    'ScreeningRequest',
-    'ScreeningResult',
-    'ScreeningMatch',
+    "ScreeningRequest",
+    "ScreeningResult",
+    "ScreeningMatch",
     # Audit models
-    'AuditLog',
-    'DataSource',
-    'DataUpdate',
+    "AuditLog",
+    "DataSource",
+    "DataUpdate",
     # New database provider (recommended)
-    'DatabaseSessionProvider',
-    'DatabaseSettings',
-    'UnitOfWork',
-    'AsyncUnitOfWork',
+    "DatabaseSessionProvider",
+    "DatabaseSettings",
+    "UnitOfWork",
+    "AsyncUnitOfWork",
     # FastAPI dependencies
-    'get_db',
-    'get_async_db',
-    'get_db_provider',
+    "get_db",
+    "get_async_db",
+    "get_db_provider",
     # Initialization
-    'init_db',
-    'close_db',
+    "init_db",
+    "close_db",
     # Testing support
-    'create_test_provider',
+    "create_test_provider",
     # Monitoring
-    'query_timer',
-    'timed_query',
-    'async_timed_query',
-    'get_db_metrics',
-    'get_slow_query_report',
-    'reset_metrics',
-    'configure_monitoring',
-    'check_health',
-    'HealthStatus',
+    "query_timer",
+    "timed_query",
+    "async_timed_query",
+    "get_db_metrics",
+    "get_slow_query_report",
+    "reset_metrics",
+    "configure_monitoring",
+    "check_health",
+    "HealthStatus",
     # Backward compatible (deprecated)
-    'DatabaseManager',
-    'get_db_manager',
+    "DatabaseManager",
+    "get_db_manager",
 ]

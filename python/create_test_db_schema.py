@@ -1,6 +1,7 @@
 """
 Script para crear todas las tablas en la base de datos de pruebas PostgreSQL.
 """
+
 from database.models import Base
 from database.connection import DatabaseSessionProvider, DatabaseSettings
 
@@ -11,7 +12,7 @@ if __name__ == "__main__":
         user="sdn_user",
         password="sdn_password",
         host="localhost",
-        port=5432
+        port=5432,
     )
     provider = DatabaseSessionProvider(settings=settings)
     provider.init()

@@ -38,7 +38,7 @@ def get_url() -> str:
     url = get_database_url()
     if url:
         return url
-    
+
     # Fall back to config
     return config.get_main_option("sqlalchemy.url")
 
@@ -49,7 +49,7 @@ def run_migrations_offline() -> None:
 
     This configures the context with just a URL and not an Engine,
     though an Engine is acceptable here as well.
-    
+
     By skipping the Engine creation we don't even need a DBAPI to be available.
     Calls to context.execute() here emit the given string to the script output.
     """
@@ -77,7 +77,7 @@ def run_migrations_online() -> None:
     # Override the sqlalchemy.url in the config
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
-    
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",

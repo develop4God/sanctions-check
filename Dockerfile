@@ -56,7 +56,6 @@ COPY python/alembic/ ./alembic/
 COPY python/database/ ./database/
 COPY python/logs/ ./logs/
 COPY python/reports/ ./reports/
-COPY python/audit_log/ ./audit_log/
 COPY scripts/ ../scripts/
 
 # Set permissions

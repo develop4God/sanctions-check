@@ -484,11 +484,11 @@ async def health_check(
                                 tree = ET.parse(f)
                                 root = tree.getroot()
                                 # Try to get a date attribute from root (if exists)
-                                    ofac_last_updated = root.attrib.get("dateGenerated")
-                                    if not ofac_last_updated:
-                                        ofac_last_updated = modified_time.isoformat()
-                                except Exception:
+                                ofac_last_updated = root.attrib.get("dateGenerated")
+                                if not ofac_last_updated:
                                     ofac_last_updated = modified_time.isoformat()
+                            except Exception:
+                                ofac_last_updated = modified_time.isoformat()
 
                         # Parse UN XML for last update (prefer dateGenerated)
                         if f.name == "un_consolidated.xml":

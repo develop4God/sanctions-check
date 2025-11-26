@@ -56,8 +56,8 @@ COPY python/database/ ./database/
 COPY scripts/ ../scripts/
 
 # Set permissions
-RUN chown -R appuser:appuser /app \
-    && chmod +x scripts/*.sh
+RUN chown -R appuser:appuser /app
+    # Removed chmod for scripts/*.sh to avoid build error if no .sh files exist
 
 # Switch to non-root user
 USER appuser

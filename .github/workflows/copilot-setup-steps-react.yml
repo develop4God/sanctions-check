@@ -128,8 +128,8 @@ jobs:
       - name: Check for broken links (HTML only, optional)
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --verbose --no-progress --exclude-path node_modules './**/*.html'
-          fail: false
+          args: --verbose --no-progress --exclude-path node_modules './frontend/**/*.html'
+          failIfEmpty: false   # Evita que falle si no hay links
 
       - name: Validation Summary
         if: always()

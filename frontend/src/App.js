@@ -7,6 +7,9 @@ import ScreeningForm from './components/ScreeningForm';
 import ResultsDisplay from './components/ResultsDisplay';
 import BulkScreening from './components/BulkScreening';
 
+// Import background image
+import PanamaBackground from './assets/Panama.avif';
+
 /**
  * SDNCheck PA - Aplicación de Screening de Sanciones
  * Sistema profesional de verificación contra listas OFAC y ONU para Panamá
@@ -87,7 +90,7 @@ function App() {
   // Pantalla de introducción con imagen de Panamá
   if (showIntro) {
     return (
-      <div className="intro-screen">
+      <div className="intro-screen" style={{ backgroundImage: `url(${PanamaBackground})` }}>
         <div className="intro-overlay">
           <div className="intro-content">
             <div className="intro-logo">

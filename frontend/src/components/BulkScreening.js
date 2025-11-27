@@ -1,12 +1,16 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 
 /**
  * BulkScreening - Componente para screening masivo por CSV
- * Versión 2.0: Incluye visor de reportes HTML para hits individuales y generación masiva
+ * Versión 3.0: Incluye paginación, selección masiva, guardado, visor de reportes HTML
  */
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+// Configuración de paginación
+const PAGE_SIZES = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 10;
 
 // Plantilla CSV para descargar
 const CSV_TEMPLATE = `nombre,cedula,pais,fecha_nacimiento,nacionalidad
@@ -17,7 +21,7 @@ Carlos Hernández,,CO,,VE`;
 /**
  * Genera HTML profesional para un reporte de screening individual
  */
-function generateReportHTML(result, index) {
+function generateReportHTML(result) {
   const { input, is_hit, hit_count, matches, screening_id } = result;
   const timestamp = new Date().toLocaleString('es-PA');
   
@@ -106,14 +110,8 @@ function generateReportHTML(result, index) {
       color: white;
       background: ${is_hit ? 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)' : 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)'};
     }
-    .header h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-    }
-    .header .subtitle {
-      opacity: 0.9;
-      font-size: 14px;
-    }
+    .header h1 { font-size: 24px; margin-bottom: 8px; }
+    .header .subtitle { opacity: 0.9; font-size: 14px; }
     .status-badge {
       display: inline-block;
       padding: 8px 20px;
@@ -143,14 +141,8 @@ function generateReportHTML(result, index) {
       grid-template-columns: 150px 1fr;
       gap: 10px;
     }
-    .info-label {
-      font-weight: 600;
-      color: #64748b;
-      font-size: 13px;
-    }
-    .info-value {
-      font-weight: 500;
-    }
+    .info-label { font-weight: 600; color: #64748b; font-size: 13px; }
+    .info-value { font-weight: 500; }
     .match-card {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
@@ -166,10 +158,7 @@ function generateReportHTML(result, index) {
       padding-bottom: 10px;
       border-bottom: 1px solid #e2e8f0;
     }
-    .match-number {
-      font-weight: 700;
-      color: #64748b;
-    }
+    .match-number { font-weight: 700; color: #64748b; }
     .confidence {
       padding: 4px 12px;
       border-radius: 20px;
@@ -179,23 +168,10 @@ function generateReportHTML(result, index) {
     .confidence.high { background: #fee2e2; color: #dc2626; }
     .confidence.medium { background: #fef3c7; color: #d97706; }
     .confidence.low { background: #dcfce7; color: #16a34a; }
-    .match-details .detail-row {
-      display: flex;
-      padding: 6px 0;
-    }
-    .detail-row .label {
-      flex: 0 0 140px;
-      font-size: 13px;
-      color: #64748b;
-    }
-    .detail-row .value {
-      flex: 1;
-      font-weight: 500;
-    }
-    .detail-row .value.primary {
-      font-size: 16px;
-      color: #0d1b2a;
-    }
+    .match-details .detail-row { display: flex; padding: 6px 0; }
+    .detail-row .label { flex: 0 0 140px; font-size: 13px; color: #64748b; }
+    .detail-row .value { flex: 1; font-weight: 500; }
+    .detail-row .value.primary { font-size: 16px; color: #0d1b2a; }
     .detail-row .value.source {
       display: inline-block;
       background: #1b3a5c;
@@ -204,13 +180,8 @@ function generateReportHTML(result, index) {
       border-radius: 4px;
       font-size: 12px;
     }
-    .detail-row .value.aliases {
-      font-style: italic;
-      font-size: 13px;
-    }
-    .detail-row .value.recommendation {
-      font-weight: 700;
-    }
+    .detail-row .value.aliases { font-style: italic; font-size: 13px; }
+    .detail-row .value.recommendation { font-weight: 700; }
     .recommendation.reject { color: #dc2626; }
     .recommendation.approve { color: #16a34a; }
     .recommendation.review, .recommendation.manual_review { color: #d97706; }
@@ -279,8 +250,7 @@ function generateReportHTML(result, index) {
     
     <div class="footer">
       <p><strong>Documento generado automáticamente por SDNCheck PA</strong></p>
-      <p>Este reporte es válido únicamente para la fecha indicada. Las listas de sanciones se actualizan frecuentemente.</p>
-      <p style="margin-top: 10px;">Verificación contra listas OFAC (EE.UU.) y ONU</p>
+      <p>Este reporte es válido únicamente para la fecha indicada.</p>
     </div>
   </div>
   
@@ -436,7 +406,7 @@ function generateBulkReportHTML(results) {
         <div class="summary-label">Sin Coincidencias</div>
       </div>
       <div class="summary-card">
-        <div class="summary-value">${((hits.length / results.length) * 100).toFixed(1)}%</div>
+        <div class="summary-value">${results.length > 0 ? ((hits.length / results.length) * 100).toFixed(1) : 0}%</div>
         <div class="summary-label">Tasa de Hits</div>
       </div>
     </div>
@@ -508,7 +478,46 @@ function BulkScreening({ disabled }) {
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [selectedResults, setSelectedResults] = useState(new Set());
+  
+  // Estados de paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  
+  // Estado de filtro
+  const [filterType, setFilterType] = useState('all'); // 'all', 'hits', 'clear'
+  
   const fileInputRef = useRef(null);
+
+  // Filtrar resultados
+  const filteredResults = useMemo(() => {
+    if (!results?.results) return [];
+    switch (filterType) {
+      case 'hits':
+        return results.results.filter(r => r.is_hit);
+      case 'clear':
+        return results.results.filter(r => !r.is_hit);
+      default:
+        return results.results;
+    }
+  }, [results, filterType]);
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filteredResults.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, filteredResults.length);
+  const paginatedResults = filteredResults.slice(startIndex, endIndex);
+
+  // Reset página cuando cambia el filtro
+  const handleFilterChange = (newFilter) => {
+    setFilterType(newFilter);
+    setCurrentPage(1);
+  };
+
+  // Cambiar tamaño de página
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
 
   // Descargar plantilla CSV
   const downloadTemplate = () => {
@@ -544,6 +553,7 @@ function BulkScreening({ disabled }) {
     setError(null);
     setResults(null);
     setSelectedResults(new Set());
+    setCurrentPage(1);
   };
 
   // Manejar drag & drop
@@ -598,6 +608,8 @@ function BulkScreening({ disabled }) {
       const data = await response.json();
       setResults(data);
       setSelectedResults(new Set());
+      setCurrentPage(1);
+      setFilterType('all');
     } catch (err) {
       const message = err.name === 'TypeError'
         ? 'Error de red: No se puede conectar al servidor'
@@ -614,6 +626,8 @@ function BulkScreening({ disabled }) {
     setResults(null);
     setError(null);
     setSelectedResults(new Set());
+    setCurrentPage(1);
+    setFilterType('all');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -630,7 +644,7 @@ function BulkScreening({ disabled }) {
   };
 
   // Exportar resultados CSV
-  const exportResults = () => {
+  const exportResults = useCallback(() => {
     if (!results?.results) return;
 
     const csvRows = [
@@ -659,29 +673,85 @@ function BulkScreening({ disabled }) {
     link.download = `sdncheck_resultados_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
-  };
+  }, [results]);
+
+  // Guardar resultados como JSON
+  const saveResultsJSON = useCallback(() => {
+    if (!results) return;
+    
+    const dataStr = JSON.stringify(results, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `sdncheck_resultados_${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }, [results]);
 
   // Ver reporte individual
-  const viewReport = useCallback((result, index) => {
-    const html = generateReportHTML(result, index);
+  const viewReport = useCallback((result) => {
+    const html = generateReportHTML(result);
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, []);
 
-  // Seleccionar/deseleccionar resultado
-  const toggleSelection = useCallback((index) => {
+  // Obtener índice real en results.results
+  const getRealIndex = useCallback((filteredIndex) => {
+    const item = filteredResults[filteredIndex];
+    return results?.results?.indexOf(item) ?? filteredIndex;
+  }, [filteredResults, results]);
+
+  // Seleccionar/deseleccionar resultado (usando índice real)
+  const toggleSelection = useCallback((filteredIndex) => {
+    const realIndex = getRealIndex(filteredIndex);
     setSelectedResults(prev => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
+      if (next.has(realIndex)) {
+        next.delete(realIndex);
       } else {
-        next.add(index);
+        next.add(realIndex);
       }
       return next;
     });
-  }, []);
+  }, [getRealIndex]);
+
+  // Verificar si un resultado está seleccionado
+  const isSelected = useCallback((filteredIndex) => {
+    const realIndex = getRealIndex(filteredIndex);
+    return selectedResults.has(realIndex);
+  }, [getRealIndex, selectedResults]);
+
+  // Seleccionar todos los de la página actual
+  const selectAllOnPage = useCallback(() => {
+    const newSelected = new Set(selectedResults);
+    for (let i = startIndex; i < endIndex; i++) {
+      const realIndex = results?.results?.indexOf(filteredResults[i]);
+      if (realIndex !== undefined && realIndex !== -1) {
+        newSelected.add(realIndex);
+      }
+    }
+    setSelectedResults(newSelected);
+  }, [selectedResults, startIndex, endIndex, filteredResults, results]);
+
+  // Deseleccionar todos los de la página actual
+  const deselectAllOnPage = useCallback(() => {
+    const newSelected = new Set(selectedResults);
+    for (let i = startIndex; i < endIndex; i++) {
+      const realIndex = results?.results?.indexOf(filteredResults[i]);
+      if (realIndex !== undefined && realIndex !== -1) {
+        newSelected.delete(realIndex);
+      }
+    }
+    setSelectedResults(newSelected);
+  }, [selectedResults, startIndex, endIndex, filteredResults, results]);
+
+  // Seleccionar todos los resultados
+  const selectAll = useCallback(() => {
+    if (!results?.results) return;
+    setSelectedResults(new Set(results.results.map((_, i) => i)));
+  }, [results]);
 
   // Seleccionar todos los hits
   const selectAllHits = useCallback(() => {
@@ -697,13 +767,24 @@ function BulkScreening({ disabled }) {
     setSelectedResults(new Set());
   }, []);
 
+  // Verificar si todos en la página están seleccionados
+  const allOnPageSelected = useMemo(() => {
+    if (paginatedResults.length === 0) return false;
+    for (let i = 0; i < paginatedResults.length; i++) {
+      const realIndex = results?.results?.indexOf(paginatedResults[i]);
+      if (!selectedResults.has(realIndex)) return false;
+    }
+    return true;
+  }, [paginatedResults, results, selectedResults]);
+
   // Imprimir seleccionados
   const printSelected = useCallback(() => {
     if (!results?.results || selectedResults.size === 0) return;
     
     const selectedData = Array.from(selectedResults)
       .sort((a, b) => a - b)
-      .map(i => results.results[i]);
+      .map(i => results.results[i])
+      .filter(Boolean);
     
     const html = generateBulkReportHTML(selectedData);
     const blob = new Blob([html], { type: 'text/html' });
@@ -722,6 +803,23 @@ function BulkScreening({ disabled }) {
     window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }, [results]);
+
+  // Generar rango de páginas para mostrar
+  const getPageRange = () => {
+    const range = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  };
 
   return (
     <div className="bulk-screening">
@@ -866,48 +964,130 @@ function BulkScreening({ disabled }) {
             </div>
           </div>
 
-          {/* Botones de exportación y reportes */}
-          <div className="export-section">
-            <button
-              type="button"
-              onClick={exportResults}
-              className="btn btn-outline"
-            >
-              📥 Exportar CSV
-            </button>
-            <button
-              type="button"
-              onClick={printAll}
-              className="btn btn-outline"
-            >
-              📄 Reporte Completo
-            </button>
-            <button
-              type="button"
-              onClick={selectAllHits}
-              className="btn btn-secondary"
-              disabled={results.hits === 0}
-            >
-              ⚠️ Seleccionar Hits ({results.hits})
-            </button>
-            {selectedResults.size > 0 && (
-              <>
+          {/* Barra de herramientas de acciones */}
+          <div className="results-toolbar">
+            {/* Sección de filtros */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">Filtrar:</label>
+              <div className="filter-buttons">
                 <button
                   type="button"
-                  onClick={clearSelection}
-                  className="btn btn-secondary"
+                  className={`filter-btn ${filterType === 'all' ? 'active' : ''}`}
+                  onClick={() => handleFilterChange('all')}
                 >
-                  Deseleccionar
+                  Todos ({results.total_processed})
                 </button>
                 <button
                   type="button"
-                  onClick={printSelected}
-                  className="btn btn-primary"
+                  className={`filter-btn filter-hits ${filterType === 'hits' ? 'active' : ''}`}
+                  onClick={() => handleFilterChange('hits')}
                 >
-                  🖨️ Imprimir Seleccionados ({selectedResults.size})
+                  ⚠️ Hits ({results.hits})
                 </button>
-              </>
-            )}
+                <button
+                  type="button"
+                  className={`filter-btn filter-clear ${filterType === 'clear' ? 'active' : ''}`}
+                  onClick={() => handleFilterChange('clear')}
+                >
+                  ✅ Limpios ({results.total_processed - results.hits})
+                </button>
+              </div>
+            </div>
+
+            {/* Sección de selección */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">Selección:</label>
+              <div className="selection-buttons">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={selectAll}
+                  title="Seleccionar todos los registros"
+                >
+                  ☑️ Todo ({results.total_processed})
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={selectAllHits}
+                  disabled={results.hits === 0}
+                  title="Seleccionar solo coincidencias"
+                >
+                  ⚠️ Hits ({results.hits})
+                </button>
+                {selectedResults.size > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={clearSelection}
+                  >
+                    ✕ Limpiar ({selectedResults.size})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Sección de exportación */}
+            <div className="toolbar-section">
+              <label className="toolbar-label">Guardar:</label>
+              <div className="export-buttons">
+                <button
+                  type="button"
+                  onClick={exportResults}
+                  className="btn btn-sm btn-outline"
+                  title="Exportar a CSV"
+                >
+                  📥 CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={saveResultsJSON}
+                  className="btn btn-sm btn-outline"
+                  title="Guardar como JSON"
+                >
+                  💾 JSON
+                </button>
+                <button
+                  type="button"
+                  onClick={printAll}
+                  className="btn btn-sm btn-outline"
+                  title="Generar reporte HTML de todos"
+                >
+                  📄 Reporte
+                </button>
+                {selectedResults.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={printSelected}
+                    className="btn btn-sm btn-primary"
+                    title="Imprimir seleccionados"
+                  >
+                    🖨️ Imprimir ({selectedResults.size})
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Información de paginación y controles */}
+          <div className="pagination-info">
+            <div className="page-size-selector">
+              <label>Mostrar:</label>
+              <select 
+                value={pageSize} 
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                className="page-size-select"
+              >
+                {PAGE_SIZES.map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+              <span>registros</span>
+            </div>
+            <div className="results-count">
+              Mostrando {startIndex + 1}-{endIndex} de {filteredResults.length} registros
+              {filterType !== 'all' && ` (filtrado de ${results.total_processed})`}
+            </div>
           </div>
 
           {/* Tabla de resultados mejorada */}
@@ -918,40 +1098,118 @@ function BulkScreening({ disabled }) {
                   <th style={{width: '40px'}}>
                     <input 
                       type="checkbox" 
-                      checked={selectedResults.size === results.results?.length && results.results?.length > 0}
+                      checked={allOnPageSelected && paginatedResults.length > 0}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedResults(new Set(results.results.map((_, i) => i)));
+                          selectAllOnPage();
                         } else {
-                          setSelectedResults(new Set());
+                          deselectAllOnPage();
                         }
                       }}
+                      title="Seleccionar/deseleccionar página actual"
                     />
                   </th>
-                  <th>#</th>
+                  <th style={{width: '50px'}}>#</th>
                   <th>Nombre</th>
                   <th>Documento</th>
                   <th>País</th>
-                  <th>Resultado</th>
-                  <th>Hits</th>
-                  <th>Recomendación</th>
-                  <th>Acciones</th>
+                  <th style={{width: '100px'}}>Estado</th>
+                  <th style={{width: '60px'}}>Hits</th>
+                  <th style={{width: '120px'}}>Recomendación</th>
+                  <th style={{width: '80px'}}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {results.results?.map((r, index) => (
-                  <BulkResultRow 
-                    key={r.screening_id || index} 
-                    result={r} 
-                    index={index}
-                    selected={selectedResults.has(index)}
-                    onToggle={() => toggleSelection(index)}
-                    onViewReport={() => viewReport(r, index)}
-                  />
-                ))}
+                {paginatedResults.map((r, pageIndex) => {
+                  const globalIndex = startIndex + pageIndex;
+                  return (
+                    <BulkResultRow 
+                      key={r.screening_id || globalIndex} 
+                      result={r} 
+                      displayIndex={globalIndex + 1}
+                      selected={isSelected(globalIndex)}
+                      onToggle={() => toggleSelection(globalIndex)}
+                      onViewReport={() => viewReport(r)}
+                    />
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
+          {/* Controles de paginación */}
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                title="Primera página"
+              >
+                ⏮️
+              </button>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                title="Página anterior"
+              >
+                ◀️
+              </button>
+              
+              <div className="pagination-pages">
+                {getPageRange().map(page => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page ${page === currentPage ? 'active' : ''}`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                title="Página siguiente"
+              >
+                ▶️
+              </button>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                title="Última página"
+              >
+                ⏭️
+              </button>
+              
+              <div className="pagination-jump">
+                <span>Ir a:</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value);
+                    if (page >= 1 && page <= totalPages) {
+                      setCurrentPage(page);
+                    }
+                  }}
+                  className="page-jump-input"
+                />
+                <span>de {totalPages}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -961,7 +1219,7 @@ function BulkScreening({ disabled }) {
 /**
  * BulkResultRow - Fila de resultado en la tabla con acciones
  */
-function BulkResultRow({ result, index, selected, onToggle, onViewReport }) {
+function BulkResultRow({ result, displayIndex, selected, onToggle, onViewReport }) {
   const { input, is_hit, hit_count, matches } = result;
   const recommendation = is_hit && matches?.[0]?.recommendation 
     ? matches[0].recommendation 
@@ -986,7 +1244,7 @@ function BulkResultRow({ result, index, selected, onToggle, onViewReport }) {
   };
 
   return (
-    <tr className={is_hit ? 'row-hit' : 'row-clear'}>
+    <tr className={`${is_hit ? 'row-hit' : 'row-clear'} ${selected ? 'row-selected' : ''}`}>
       <td>
         <input 
           type="checkbox" 
@@ -994,8 +1252,8 @@ function BulkResultRow({ result, index, selected, onToggle, onViewReport }) {
           onChange={onToggle}
         />
       </td>
-      <td>{index + 1}</td>
-      <td><strong>{input?.nombre || '-'}</strong></td>
+      <td className="row-number">{displayIndex}</td>
+      <td className="cell-name"><strong>{input?.nombre || '-'}</strong></td>
       <td>{input?.cedula || '-'}</td>
       <td>{input?.pais || '-'}</td>
       <td>
@@ -1003,7 +1261,7 @@ function BulkResultRow({ result, index, selected, onToggle, onViewReport }) {
           {is_hit ? '⚠️ HIT' : '✅ OK'}
         </span>
       </td>
-      <td>{hit_count || 0}</td>
+      <td className="text-center">{hit_count || 0}</td>
       <td>
         <span className={`recommendation-badge-small ${getRecommendationClass()}`}>
           {getRecommendationText()}
@@ -1029,7 +1287,7 @@ BulkScreening.propTypes = {
 
 BulkResultRow.propTypes = {
   result: PropTypes.object.isRequired,
-  index: PropTypes.number.isRequired,
+  displayIndex: PropTypes.number.isRequired,
   selected: PropTypes.bool.isRequired,
   onToggle: PropTypes.func.isRequired,
   onViewReport: PropTypes.func.isRequired

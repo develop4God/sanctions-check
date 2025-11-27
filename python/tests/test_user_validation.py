@@ -33,8 +33,8 @@ from config_manager import ConfigManager, ConfigurationError
 
 @pytest.fixture
 def config():
-    """Create a test configuration with default values."""
-    cfg = ConfigManager()
+    """Create a test configuration using the new DI pattern."""
+    cfg = ConfigManager.create()  # Use factory method per new DI pattern
     return cfg
 
 

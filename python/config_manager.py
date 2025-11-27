@@ -564,12 +564,13 @@ def get_config_dependency() -> ConfigManager:
         ConfigManager instance
         
     Raises:
-        RuntimeError: If config not initialized
+        RuntimeError: If config not initialized. Call init_config() first.
     """
     global _config_instance
     if _config_instance is None:
-        # Auto-initialize with defaults for convenience
-        _config_instance = ConfigManager()
+        raise RuntimeError(
+            "Configuration not initialized. Call init_config() during app startup."
+        )
     return _config_instance
 
 

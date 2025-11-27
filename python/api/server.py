@@ -147,16 +147,9 @@ def get_database_screening_service():
     
     from database.screening_service import DatabaseScreeningService
     
-    # Create a new session for this request
-    session_gen = _db_provider.get_session()
-    session = next(session_gen)
-    try:
+    # Use session_scope context manager for proper cleanup
+    with _db_provider.session_scope() as session:
         yield DatabaseScreeningService(session, _config)
-    finally:
-        try:
-            next(session_gen)
-        except StopIteration:
-            pass
 
 
 def get_data_mode() -> str:

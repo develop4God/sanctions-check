@@ -7,12 +7,14 @@ const CACHE_VERSION = 'sanctions-check-v1.0.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
-// Static assets to cache
-const STATIC_ASSETS = [
+// Static assets to cache (core assets that must be available)
+const CRITICAL_ASSETS = [
   '/',
-  '/index.html',
-  '/static/css/main.css',
-  '/static/js/main.js',
+  '/index.html'
+];
+
+// Optional assets (nice to have cached, but not critical)
+const OPTIONAL_ASSETS = [
   '/icon.png',
   '/Panama.avif'
 ];
@@ -23,11 +25,18 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Caching static assets');
-        // Don't fail installation if some assets aren't available
-        return cache.addAll(STATIC_ASSETS).catch((err) => {
-          console.warn('[SW] Failed to cache some static assets:', err);
-        });
+        console.log('[SW] Caching critical assets');
+        // Cache critical assets first (must succeed)
+        return cache.addAll(CRITICAL_ASSETS)
+          .then(() => {
+            // Cache optional assets (can fail)
+            console.log('[SW] Caching optional assets');
+            return Promise.allSettled(
+              OPTIONAL_ASSETS.map(url => cache.add(url).catch(err => {
+                console.warn('[SW] Failed to cache optional asset:', url, err);
+              }))
+            );
+          });
       })
       .then(() => self.skipWaiting())
   );

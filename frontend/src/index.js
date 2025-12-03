@@ -16,10 +16,17 @@ if ('serviceWorker' in navigator) {
       .then((registration) => {
         console.log('Service Worker registered:', registration);
         
-        // Check for updates periodically
+        // Check for updates on visibility change (more efficient than polling)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update();
+          }
+        });
+        
+        // Also check periodically, but less frequently (5 minutes)
         setInterval(() => {
           registration.update();
-        }, 60000); // Check every minute
+        }, 300000); // 5 minutes instead of 1 minute
       })
       .catch((error) => {
         console.log('Service Worker registration failed:', error);

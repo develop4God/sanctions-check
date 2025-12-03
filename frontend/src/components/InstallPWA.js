@@ -17,6 +17,13 @@ function InstallPWA() {
       return;
     }
 
+    // Check if banner was dismissed this session
+    const dismissed = sessionStorage.getItem('pwa-banner-dismissed');
+    if (dismissed) {
+      setShowBanner(false);
+      return;
+    }
+
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e) => {
       // Prevent the mini-infobar from appearing
@@ -67,14 +74,6 @@ function InstallPWA() {
     // Don't show again for this session
     sessionStorage.setItem('pwa-banner-dismissed', 'true');
   };
-
-  // Check if banner was dismissed this session
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem('pwa-banner-dismissed');
-    if (dismissed) {
-      setShowBanner(false);
-    }
-  }, []);
 
   if (!showBanner || !deferredPrompt) {
     return null;

@@ -48,6 +48,11 @@ function createWindow() {
       return;
     }
     
+    // Allow file:// protocol navigation in production (for loading app resources)
+    if (!isDev && parsedUrl.protocol === 'file:') {
+      return;
+    }
+    
     // Prevent navigation to external URLs (security)
     event.preventDefault();
     console.log('Navigation blocked to:', navigationUrl);

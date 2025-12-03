@@ -74,21 +74,21 @@ echo -e "${YELLOW}Step 5: Verifying installer output...${NC}"
 INSTALLER_FOUND=false
 
 # Check for Windows installer
-if [ -f dist/*.exe ] || ls dist/*.exe 1> /dev/null 2>&1; then
+if ls dist/*.exe 1> /dev/null 2>&1; then
     INSTALLER_FOUND=true
     INSTALLER_SIZE=$(du -sh dist/*.exe 2>/dev/null | cut -f1 | head -1)
     echo -e "${GREEN}✓ Windows installer found: ${INSTALLER_SIZE}${NC}"
 fi
 
 # Check for macOS installer
-if [ -f dist/*.dmg ] || ls dist/*.dmg 1> /dev/null 2>&1; then
+if ls dist/*.dmg 1> /dev/null 2>&1; then
     INSTALLER_FOUND=true
     INSTALLER_SIZE=$(du -sh dist/*.dmg 2>/dev/null | cut -f1 | head -1)
     echo -e "${GREEN}✓ macOS installer found: ${INSTALLER_SIZE}${NC}"
 fi
 
 # Check for Linux installer
-if [ -f dist/*.AppImage ] || ls dist/*.AppImage 1> /dev/null 2>&1; then
+if ls dist/*.AppImage 1> /dev/null 2>&1; then
     INSTALLER_FOUND=true
     INSTALLER_SIZE=$(du -sh dist/*.AppImage 2>/dev/null | cut -f1 | head -1)
     echo -e "${GREEN}✓ Linux installer found: ${INSTALLER_SIZE}${NC}"

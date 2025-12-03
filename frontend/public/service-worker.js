@@ -1,16 +1,26 @@
 /**
  * Service Worker for Sanctions Check PWA
  * Implements Network First strategy for API calls and Cache First for static assets
+ * 
+ * Environment-specific configuration is injected during build
  */
 
 const CACHE_VERSION = 'sanctions-check-v1.0.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
+// Environment-specific configuration (injected during build)
+// These placeholders will be replaced by actual values from environment variables
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',  // Dev server (always included for local development)
+  '__REACT_APP_API_URL__'   // API URL from environment (injected during build)
+].filter(url => url && !url.startsWith('__')); // Filter out uninjected placeholders
+
 // Static assets to cache (core assets that must be available)
 const CRITICAL_ASSETS = [
   '/',
-  '/index.html'
+  '/index.html',
+  '/offline.html'  // Offline fallback page
 ];
 
 // Optional assets (nice to have cached, but not critical)
@@ -76,6 +86,9 @@ self.addEventListener('fetch', (event) => {
             const responseClone = response.clone();
             caches.open(API_CACHE).then((cache) => {
               cache.put(request, responseClone);
+              
+              // Update last sync timestamp
+              localStorage.setItem('lastSync', Date.now().toString());
               
               // Expire API cache after 5 minutes
               setTimeout(() => {
@@ -144,6 +157,25 @@ self.addEventListener('fetch', (event) => {
           })
           .catch((err) => {
             console.error('[SW] Fetch failed:', err);
+            
+            // If it's a navigation request and we're offline, show offline page
+            if (request.mode === 'navigate') {
+              return caches.match('/offline.html').then((offlinePage) => {
+                if (offlinePage) {
+                  return offlinePage;
+                }
+                // Fallback if offline page isn't cached
+                return new Response(
+                  '<h1>Offline</h1><p>Please check your internet connection.</p>',
+                  {
+                    status: 503,
+                    statusText: 'Service Unavailable',
+                    headers: { 'Content-Type': 'text/html' }
+                  }
+                );
+              });
+            }
+            
             throw err;
           });
       })

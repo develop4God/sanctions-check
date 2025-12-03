@@ -16,15 +16,15 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && cp public/service-worker.js build/",
+    "build": "react-scripts build && cp public/service-worker.js build/ && node ../scripts/inject-sw-env.js",
     "test": "react-scripts test",
     "test:build": "npm run build && node ../scripts/test-build.js",
     "eject": "react-scripts eject",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron:build": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder",
-    "electron:build:win": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder --win",
-    "electron:build:mac": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder --mac",
-    "electron:build:linux": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder --linux"
+    "electron:build": "env-cmd -f .env.electron npm run build && electron-builder",
+    "electron:build:win": "env-cmd -f .env.electron npm run build && electron-builder --win",
+    "electron:build:mac": "env-cmd -f .env.electron npm run build && electron-builder --mac",
+    "electron:build:linux": "env-cmd -f .env.electron npm run build && electron-builder --linux"
   },
   "eslintConfig": {
     "extends": [

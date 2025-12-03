@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, dialog } = require('electron');
 const path = require('path');
 const windowStateKeeper = require('electron-window-state');
 const isDev = process.env.NODE_ENV === 'development';
@@ -7,33 +7,34 @@ const isDev = process.env.NODE_ENV === 'development';
 let mainWindow;
 
 function createWindow() {
-  // Load window state (position and size)
-  let mainWindowState = windowStateKeeper({
-    defaultWidth: 1400,
-    defaultHeight: 900
-  });
+  try {
+    // Load window state (position and size)
+    let mainWindowState = windowStateKeeper({
+      defaultWidth: 1400,
+      defaultHeight: 900
+    });
 
-  // Create the browser window with saved state
-  mainWindow = new BrowserWindow({
-    x: mainWindowState.x,
-    y: mainWindowState.y,
-    width: mainWindowState.width,
-    height: mainWindowState.height,
-    minWidth: 800,
-    minHeight: 600,
-    backgroundColor: '#1a1a2e',
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    // Modern window style
-    autoHideMenuBar: true,
-    icon: path.join(__dirname, '../public/icon.png')
-  });
+    // Create the browser window with saved state
+    mainWindow = new BrowserWindow({
+      x: mainWindowState.x,
+      y: mainWindowState.y,
+      width: mainWindowState.width,
+      height: mainWindowState.height,
+      minWidth: 800,
+      minHeight: 600,
+      backgroundColor: '#1a1a2e',
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        preload: path.join(__dirname, 'preload.js')
+      },
+      // Modern window style
+      autoHideMenuBar: true,
+      icon: path.join(__dirname, '../public/icon.png')
+    });
 
-  // Let windowStateKeeper manage the window state
-  mainWindowState.manage(mainWindow);
+    // Let windowStateKeeper manage the window state
+    mainWindowState.manage(mainWindow);
 
   // Load the app
   if (isDev) {
@@ -93,6 +94,19 @@ function createWindow() {
     console.log('Blocked new window to:', url);
     return { action: 'deny' };
   });
+  } catch (error) {
+    console.error('[Electron] Failed to create window:', error);
+    
+    // Show error dialog to user
+    dialog.showErrorBox(
+      'Application Error',
+      `Failed to start Sanctions Check:\n\n${error.message}\n\nThe application will now close.`
+    );
+    
+    // Clean up and exit
+    mainWindow = null;
+    app.quit();
+  }
 }
 
 // This method will be called when Electron has finished initialization

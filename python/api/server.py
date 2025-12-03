@@ -237,7 +237,7 @@ async def startup():
                 _db_provider = None
         
         # If not in database mode, use XML mode
-if _data_mode == "xml":
+        if _data_mode == "xml":
     logger.info("🔧 XML mode: Downloading and loading entities...")
     
     # Download latest XMLs (with fallback to cached)

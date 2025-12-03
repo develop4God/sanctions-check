@@ -6,9 +6,13 @@ import HealthCheck from './components/HealthCheck';
 import ScreeningForm from './components/ScreeningForm';
 import ResultsDisplay from './components/ResultsDisplay';
 import BulkScreening from './components/BulkScreening';
+import InstallPWA from './components/InstallPWA';
 
 // Import background image
 import PanamaBackground from './assets/Panama.avif';
+
+// Platform utilities
+import { getPlatform, getVersion } from './utils/platform';
 
 /**
  * Sanctions Check - Aplicación de Screening de Sanciones
@@ -159,6 +163,9 @@ function App() {
 
   return (
     <div className="app">
+      {/* PWA Install Banner */}
+      <InstallPWA />
+      
       {/* Header moderno y compacto */}
       <header className="header">
         <div className="header-content">
@@ -167,6 +174,7 @@ function App() {
               <span className="header-shield">🛡️</span>
               <h1 className="header-title">Sanctions Check</h1>
             </div>
+            <span className="platform-badge">{getPlatform()}</span>
           </div>
           
           {/* Navegación integrada en header */}
@@ -246,7 +254,7 @@ function App() {
             © {new Date().getFullYear()} Sanctions Check
           </p>
           <p className="disclaimer">
-            Verificación OFAC & ONU
+            Verificación OFAC & ONU | v{getVersion()}
           </p>
         </div>
       </footer>

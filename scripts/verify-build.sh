@@ -43,6 +43,18 @@ fi
 echo -e "${GREEN}✓ React build successful${NC}"
 echo ""
 
+# Step 2.5: Validate Electron environment (for Electron builds)
+if [ -f ".env.electron" ]; then
+    echo -e "${YELLOW}Step 2.5: Validating Electron environment...${NC}"
+    if grep -q "your-backend.up.railway.app" .env.electron; then
+        echo -e "${RED}✗ ERROR: Update REACT_APP_API_URL in .env.electron${NC}"
+        echo -e "${RED}   Replace 'your-backend.up.railway.app' with your actual Railway URL${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ Electron environment validated${NC}"
+    echo ""
+fi
+
 # Step 3: Verify build directory
 echo -e "${YELLOW}Step 3: Verifying build directory...${NC}"
 if [ ! -d "build" ]; then

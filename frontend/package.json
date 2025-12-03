@@ -15,14 +15,14 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && cp public/service-worker.js build/",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "electron:build:win": "npm run build && electron-builder --win",
-    "electron:build:mac": "npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run build && electron-builder --linux"
+    "electron:build": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder",
+    "electron:build:win": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder --win",
+    "electron:build:mac": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder --mac",
+    "electron:build:linux": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder --linux"
   },
   "eslintConfig": {
     "extends": [
@@ -47,6 +47,7 @@
     "cross-env": "^10.1.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
+    "env-cmd": "^11.0.0",
     "wait-on": "^9.0.3"
   },
   "build": {
@@ -67,7 +68,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/icon.png"

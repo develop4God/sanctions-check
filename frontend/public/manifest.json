@@ -1,0 +1,19 @@
+{
+  "short_name": "Sanctions Check",
+  "name": "Sanctions Check - Professional Sanctions Screening",
+  "description": "Automated SDN/OFAC sanctions screening for compliance professionals",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#16213e",
+  "background_color": "#1a1a2e",
+  "orientation": "portrait-primary",
+  "scope": "/"
+}

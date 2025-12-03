@@ -8,6 +8,7 @@
   "homepage": "./",
   "private": true,
   "dependencies": {
+    "electron-window-state": "^5.0.3",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -17,6 +18,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build && cp public/service-worker.js build/",
     "test": "react-scripts test",
+    "test:build": "npm run build && node ../scripts/test-build.js",
     "eject": "react-scripts eject",
     "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "env-cmd -f .env.electron react-scripts build && cp public/service-worker.js build/ && electron-builder",
@@ -53,10 +55,13 @@
   "build": {
     "appId": "com.sanctionscheck.app",
     "productName": "Sanctions Check",
+    "asar": true,
+    "compression": "maximum",
     "files": [
       "build/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "!build/**/*.map"
     ],
     "extraMetadata": {
       "main": "electron/main.js"

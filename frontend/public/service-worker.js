@@ -76,6 +76,13 @@ self.addEventListener('fetch', (event) => {
             const responseClone = response.clone();
             caches.open(API_CACHE).then((cache) => {
               cache.put(request, responseClone);
+              
+              // Expire API cache after 5 minutes
+              setTimeout(() => {
+                cache.delete(request).then(() => {
+                  console.log('[SW] Expired API cache:', request.url);
+                });
+              }, 5 * 60 * 1000);
             });
           }
           return response;

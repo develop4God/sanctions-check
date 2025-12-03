@@ -1,15 +1,24 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const windowStateKeeper = require('electron-window-state');
 const isDev = process.env.NODE_ENV === 'development';
 
 // Keep a global reference of the window object
 let mainWindow;
 
 function createWindow() {
-  // Create the browser window with security settings
+  // Load window state (position and size)
+  let mainWindowState = windowStateKeeper({
+    defaultWidth: 1400,
+    defaultHeight: 900
+  });
+
+  // Create the browser window with saved state
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    x: mainWindowState.x,
+    y: mainWindowState.y,
+    width: mainWindowState.width,
+    height: mainWindowState.height,
     minWidth: 800,
     minHeight: 600,
     backgroundColor: '#1a1a2e',
@@ -22,6 +31,9 @@ function createWindow() {
     autoHideMenuBar: true,
     icon: path.join(__dirname, '../public/icon.png')
   });
+
+  // Let windowStateKeeper manage the window state
+  mainWindowState.manage(mainWindow);
 
   // Load the app
   if (isDev) {
@@ -39,23 +51,40 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Handle navigation attempts
+  // Handle navigation attempts with whitelist
   mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
     const parsedUrl = new URL(navigationUrl);
     
-    // Allow navigation within the app
-    if (isDev && parsedUrl.origin === 'http://localhost:3000') {
-      return;
-    }
+    // Whitelist allowed origins
+    const allowedOrigins = [
+      'http://localhost:3000',  // Dev server
+      process.env.REACT_APP_API_URL || 'https://your-backend.up.railway.app'
+    ].filter(Boolean);
     
-    // Allow file:// protocol navigation in production (for loading app resources)
+    // Allow file:// protocol in production (for loading app resources)
     if (!isDev && parsedUrl.protocol === 'file:') {
       return;
     }
     
-    // Prevent navigation to external URLs (security)
-    event.preventDefault();
-    console.log('Navigation blocked to:', navigationUrl);
+    // Allow navigation within dev server
+    if (isDev && parsedUrl.origin === 'http://localhost:3000') {
+      return;
+    }
+    
+    // Check if origin is in whitelist
+    const isAllowed = allowedOrigins.some(origin => {
+      try {
+        const allowedUrl = new URL(origin);
+        return parsedUrl.origin === allowedUrl.origin;
+      } catch {
+        return false;
+      }
+    });
+    
+    if (!isAllowed) {
+      event.preventDefault();
+      console.warn('[Security] Blocked navigation to:', navigationUrl);
+    }
   });
 
   // Handle new window requests

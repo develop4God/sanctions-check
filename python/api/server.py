@@ -917,12 +917,10 @@ async def generate_individual_report(
         )
         
     except Exception as e:
-        logger.error(f"Report generation failed: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Report generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Report generation failed: {str(e)}"
+            detail="Report generation failed"
         )
 
 
@@ -1186,12 +1184,10 @@ async def generate_bulk_report(
         )
         
     except Exception as e:
-        logger.error(f"Bulk report generation failed: {e}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Bulk report generation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Bulk report generation failed: {str(e)}"
+            detail="Bulk report generation failed"
         )
 
 

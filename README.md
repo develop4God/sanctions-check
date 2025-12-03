@@ -1,6 +1,6 @@
-# SDNCheck PA 🇵🇦
+# Sanctions Check 🛡️
 
-Automated SDN/OFAC sanctions screening for Panama compliance professionals.
+Automated SDN/OFAC sanctions screening for compliance professionals.
 
 ## Architecture
 
@@ -27,8 +27,8 @@ Automated SDN/OFAC sanctions screening for Panama compliance professionals.
 
 ```bash
 # Clone the repository
-git clone https://github.com/develop4God/sdncheck.git
-cd sdncheck
+git clone https://github.com/develop4God/sanctions-check.git
+cd sanctions-check
 
 # Start all services
 docker-compose up --build
@@ -61,7 +61,7 @@ Railway deployment uses a multi-service architecture with separate services for 
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
 2. Click "New Project" → "Deploy from GitHub repo"
-3. Select the `sdncheck` repository
+3. Select the `sanctions-check` repository
 
 ### Step 2: Add PostgreSQL Database
 
@@ -71,7 +71,7 @@ Railway deployment uses a multi-service architecture with separate services for 
 
 ### Step 3: Deploy Backend Service
 
-1. Click "New Service" → "GitHub Repo" → Select `sdncheck`
+1. Click "New Service" → "GitHub Repo" → Select `sanctions-check`
 2. Configure the service:
    - **Name**: `backend`
    - **Root Directory**: `/` (leave empty for root)
@@ -89,7 +89,7 @@ Railway deployment uses a multi-service architecture with separate services for 
 
 ### Step 4: Deploy Frontend Service
 
-1. Click "New Service" → "GitHub Repo" → Select `sdncheck`
+1. Click "New Service" → "GitHub Repo" → Select `sanctions-check`
 2. Configure the service:
    - **Name**: `frontend`
    - **Root Directory**: `frontend`
@@ -133,7 +133,7 @@ The backend supports wildcard CORS patterns for Railway's dynamic subdomains:
 
 ```bash
 # Allow specific Railway subdomain
-CORS_ORIGINS=https://sdncheck-frontend.up.railway.app
+CORS_ORIGINS=https://sanctions-check-frontend.up.railway.app
 
 # Allow all Railway subdomains (development)
 CORS_ORIGINS=https://*.up.railway.app
@@ -201,8 +201,8 @@ The audit log HTML report includes a logo at the top, embedded as a base64 PNG i
 
 ## License
 
-Proprietary - SDNCheck Panama © 2025
+Proprietary - Sanctions Check © 2025
 
 ---
 
-SDNCheck - Professional SDN screening for Panama 🚀
+Sanctions Check - Professional SDN screening 🚀

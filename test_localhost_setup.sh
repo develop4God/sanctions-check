@@ -172,13 +172,32 @@ echo "Test 7: Checking if ports are available..."
 check_port() {
     PORT=$1
     NAME=$2
-    if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-        print_warning "Port $PORT ($NAME) is already in use"
-        return 1
+    
+    # Try lsof first (macOS, Linux)
+    if command -v lsof &> /dev/null; then
+        if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+            print_warning "Port $PORT ($NAME) is already in use"
+            return 1
+        fi
+    # Fallback to netstat (older systems)
+    elif command -v netstat &> /dev/null; then
+        if netstat -tuln 2>/dev/null | grep -q ":$PORT " ; then
+            print_warning "Port $PORT ($NAME) is already in use"
+            return 1
+        fi
+    # Fallback to ss (modern Linux)
+    elif command -v ss &> /dev/null; then
+        if ss -tuln 2>/dev/null | grep -q ":$PORT " ; then
+            print_warning "Port $PORT ($NAME) is already in use"
+            return 1
+        fi
     else
-        print_success "Port $PORT ($NAME) is available"
+        print_info "Cannot check port $PORT (no lsof/netstat/ss available)"
         return 0
     fi
+    
+    print_success "Port $PORT ($NAME) is available"
+    return 0
 }
 
 check_port 8000 "Backend API"

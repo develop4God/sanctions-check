@@ -890,35 +890,24 @@ async def generate_individual_report(
         )
         list_metadata = metadata_collector.collect_all_metadata()
         
-        # Generate report (in-memory, don't save to disk)
+        # Generate report using the generator directly
         generator = ConstanciaReportGenerator(
             output_dir=Path("/tmp/reports"),
             validate_before_generate=False,
         )
         
-        # Get HTML content by generating template directly
-        from jinja2 import Template
-        from report_generator import datetime as dt_module
+        # Generate HTML file temporarily and read content
+        report_path = generator.generate_html_report(result, list_metadata, skip_validation=True)
         
-        # Use the same template from report_generator.py
-        template_path = Path(__file__).parent.parent / "report_generator.py"
+        # Read the generated HTML
+        with open(report_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
         
-        # Read the template from report_generator.py
-        import re
-        with open(template_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-            # Extract template from generate_html_report method
-            template_match = re.search(r'template = Template\(\s*"""(.*?)"""\s*\)', content, re.DOTALL)
-            if template_match:
-                template_str = template_match.group(1)
-                template = Template(template_str)
-                html_content = template.render(
-                    result=result,
-                    list_metadata=list_metadata,
-                    datetime=dt_module
-                )
-            else:
-                raise Exception("Could not extract template from report_generator.py")
+        # Clean up temporary file
+        try:
+            Path(report_path).unlink()
+        except Exception:
+            pass
         
         return ReportResponse(
             success=True,

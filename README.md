@@ -1,6 +1,10 @@
-# SDNCheck PA 🇵🇦
+# Sanctions Check 🛡️
 
-Automated SDN/OFAC sanctions screening for Panama compliance professionals.
+Automated SDN/OFAC sanctions screening for compliance professionals.
+
+**Available as:**
+- 🌐 Web Application (React)
+- 🖥️ Desktop Application (Electron)
 
 ## Architecture
 
@@ -27,8 +31,8 @@ Automated SDN/OFAC sanctions screening for Panama compliance professionals.
 
 ```bash
 # Clone the repository
-git clone https://github.com/develop4God/sdncheck.git
-cd sdncheck
+git clone https://github.com/develop4God/sanctions-check.git
+cd sanctions-check
 
 # Start all services
 docker-compose up --build
@@ -48,6 +52,157 @@ docker-compose down
 docker-compose down -v
 ```
 
+## Electron Desktop App 🖥️
+
+The Sanctions Check desktop application provides a native desktop experience with the same functionality as the web app.
+
+### Quick Start - Desktop App
+
+#### Prerequisites
+- Node.js 16+ and npm
+- For building: Windows, macOS, or Linux development environment
+
+#### Development Mode
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Run in development mode
+npm run electron:dev
+```
+
+This will:
+1. Start the React dev server on http://localhost:3000
+2. Launch the Electron app pointing to the dev server
+3. Enable hot-reloading for development
+
+#### Building Installers
+
+**Build for your current platform:**
+```bash
+cd frontend
+npm run electron:build
+```
+
+**Build for specific platforms:**
+```bash
+# Windows installer (.exe)
+npm run electron:build:win
+
+# macOS installer (.dmg)
+npm run electron:build:mac
+
+# Linux installer (.AppImage)
+npm run electron:build:linux
+```
+
+Output files will be in `frontend/dist/`
+
+#### Build Verification
+
+Run the automated build verification script:
+```bash
+cd frontend
+../scripts/verify-build.sh
+```
+
+This script will:
+- Clean previous builds
+- Build the React app
+- Build the Electron installer
+- Verify all outputs
+- Report the deliverables
+
+### Desktop App Configuration
+
+#### Environment Variables
+
+**Development (.env.development):**
+- `REACT_APP_API_URL=http://localhost:8000` - Local backend
+
+**Production (.env.production):**
+- `REACT_APP_API_URL=https://your-backend.up.railway.app` - Railway backend
+
+Update `.env.production` with your actual Railway backend URL before building the production installer.
+
+#### App Settings
+
+- **Window Size:** 1400x900 (min: 800x600)
+- **Security:** 
+  - Context Isolation: Enabled
+  - Node Integration: Disabled
+  - Preload Script: Enabled
+- **Background Color:** #1a1a2e
+
+#### Installer Settings (Windows)
+
+- **Format:** NSIS installer
+- **One-Click Install:** Disabled (user can choose directory)
+- **Shortcuts:** Desktop and Start Menu
+- **Icon:** `frontend/public/icon.png`
+
+### Testing the Desktop App
+
+1. **Test Development Mode:**
+   ```bash
+   npm run electron:dev
+   ```
+   - Verify app launches
+   - Test API connectivity to local backend
+   - Test all features (individual and bulk screening)
+
+2. **Test Production Build:**
+   ```bash
+   npm run electron:build
+   ```
+   - Install the generated `.exe` (Windows) or equivalent
+   - Verify installer creates shortcuts
+   - Launch the app and test all features
+   - Verify API calls connect to Railway backend
+
+3. **Manual Testing Checklist:**
+   - [ ] App launches without errors
+   - [ ] Window can be resized (respects min size)
+   - [ ] Individual screening works
+   - [ ] Bulk screening (CSV upload) works
+   - [ ] Results can be downloaded (CSV, JSON, HTML)
+   - [ ] API connection to Railway works
+   - [ ] Uninstaller works properly
+
+### Troubleshooting
+
+**"Electron is not recognized"**
+- Ensure you're in the `frontend` directory
+- Run `npm install` to install dependencies
+
+**"Cannot connect to API"**
+- In development: Ensure backend is running on http://localhost:8000
+- In production: Update `REACT_APP_API_URL` in `.env.production` with your Railway URL
+
+**Build fails**
+- Delete `node_modules` and run `npm install` again
+- Ensure you have enough disk space (builds can be 300MB+)
+- Check Node.js version (16+ required)
+
+### Architecture - Desktop Mode
+
+```
+Electron App (Frontend)
+    ↓
+Railway API (Backend)
+    ↓
+PostgreSQL (Database)
+```
+
+The desktop app connects to the same Railway backend as the web app, ensuring consistent data and functionality.
+
+## Web Application (Docker)
+
+### Stop Services
 ## Deploy to Railway
 
 Railway deployment uses a multi-service architecture with separate services for backend, frontend, and database.
@@ -61,7 +216,7 @@ Railway deployment uses a multi-service architecture with separate services for 
 
 1. Go to [Railway Dashboard](https://railway.app/dashboard)
 2. Click "New Project" → "Deploy from GitHub repo"
-3. Select the `sdncheck` repository
+3. Select the `sanctions-check` repository
 
 ### Step 2: Add PostgreSQL Database
 
@@ -71,7 +226,7 @@ Railway deployment uses a multi-service architecture with separate services for 
 
 ### Step 3: Deploy Backend Service
 
-1. Click "New Service" → "GitHub Repo" → Select `sdncheck`
+1. Click "New Service" → "GitHub Repo" → Select `sanctions-check`
 2. Configure the service:
    - **Name**: `backend`
    - **Root Directory**: `/` (leave empty for root)
@@ -89,7 +244,7 @@ Railway deployment uses a multi-service architecture with separate services for 
 
 ### Step 4: Deploy Frontend Service
 
-1. Click "New Service" → "GitHub Repo" → Select `sdncheck`
+1. Click "New Service" → "GitHub Repo" → Select `sanctions-check`
 2. Configure the service:
    - **Name**: `frontend`
    - **Root Directory**: `frontend`
@@ -133,7 +288,7 @@ The backend supports wildcard CORS patterns for Railway's dynamic subdomains:
 
 ```bash
 # Allow specific Railway subdomain
-CORS_ORIGINS=https://sdncheck-frontend.up.railway.app
+CORS_ORIGINS=https://sanctions-check-frontend.up.railway.app
 
 # Allow all Railway subdomains (development)
 CORS_ORIGINS=https://*.up.railway.app
@@ -201,8 +356,8 @@ The audit log HTML report includes a logo at the top, embedded as a base64 PNG i
 
 ## License
 
-Proprietary - SDNCheck Panama © 2025
+Proprietary - Sanctions Check © 2025
 
 ---
 
-SDNCheck - Professional SDN screening for Panama 🚀
+Sanctions Check - Professional SDN screening 🚀

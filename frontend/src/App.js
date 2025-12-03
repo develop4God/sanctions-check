@@ -6,12 +6,16 @@ import HealthCheck from './components/HealthCheck';
 import ScreeningForm from './components/ScreeningForm';
 import ResultsDisplay from './components/ResultsDisplay';
 import BulkScreening from './components/BulkScreening';
+import InstallPWA from './components/InstallPWA';
 
 // Import background image
 import PanamaBackground from './assets/Panama.avif';
 
+// Platform utilities
+import { getPlatform, getVersion } from './utils/platform';
+
 /**
- * SDNCheck PA - Aplicación de Screening de Sanciones
+ * Sanctions Check - Aplicación de Screening de Sanciones
  * Sistema profesional de verificación contra listas OFAC y ONU para Panamá
  * Versión 2.0 - Diseño moderno y profesional
  */
@@ -97,7 +101,7 @@ function App() {
               <div className="logo-icon">
                 <span className="shield-icon">🛡️</span>
               </div>
-              <h1 className="intro-title">SDNCheck<span className="intro-pa">PA</span></h1>
+              <h1 className="intro-title">Sanctions Check</h1>
               <div className="intro-subtitle">Sistema de Verificación de Sanciones</div>
             </div>
             
@@ -148,7 +152,7 @@ function App() {
             </button>
 
             <div className="intro-footer">
-              <p>© {new Date().getFullYear()} SDNCheck Panama</p>
+              <p>© {new Date().getFullYear()} Sanctions Check</p>
               <p className="intro-disclaimer">Verificación contra listas OFAC (EE.UU.) y ONU</p>
             </div>
           </div>
@@ -159,14 +163,18 @@ function App() {
 
   return (
     <div className="app">
+      {/* PWA Install Banner */}
+      <InstallPWA />
+      
       {/* Header moderno y compacto */}
       <header className="header">
         <div className="header-content">
           <div className="logo-section" onClick={() => setShowIntro(true)} style={{cursor: 'pointer'}}>
             <div className="header-logo">
               <span className="header-shield">🛡️</span>
-              <h1 className="header-title">SDNCheck<span className="header-pa">PA</span></h1>
+              <h1 className="header-title">Sanctions Check</h1>
             </div>
+            <span className="platform-badge">{getPlatform()}</span>
           </div>
           
           {/* Navegación integrada en header */}
@@ -243,10 +251,10 @@ function App() {
       <footer className="footer">
         <div className="footer-content">
           <p className="copyright">
-            © {new Date().getFullYear()} SDNCheck Panama
+            © {new Date().getFullYear()} Sanctions Check
           </p>
           <p className="disclaimer">
-            Verificación OFAC & ONU
+            Verificación OFAC & ONU | v{getVersion()}
           </p>
         </div>
       </footer>

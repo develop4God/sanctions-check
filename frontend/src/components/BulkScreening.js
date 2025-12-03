@@ -241,7 +241,7 @@ function generateReportHTML(result) {
         <span style="font-size: 48px;">🛡️</span>
       </div>
       <h1>CONSTANCIA DE VERIFICACIÓN DE LISTAS DE SANCIONES</h1>
-      <div class="subtitle">SDNCheck PA - Screening contra listas OFAC y UN</div>
+      <div class="subtitle">Sanctions Check - Screening contra listas OFAC y UN</div>
     </div>
     
     <div class="status-badge ${is_hit ? 'status-hit' : 'status-clear'}">
@@ -316,7 +316,7 @@ function generateReportHTML(result) {
     </div>
     
     <div class="footer">
-      <p><strong>Documento generado automáticamente por SDNCheck PA</strong></p>
+      <p><strong>Documento generado automáticamente por Sanctions Check</strong></p>
       <p>Fecha de generación: ${dateFormatted}</p>
       <p style="margin-top: 10px;">Este reporte es válido únicamente para la fecha indicada. Las listas de sanciones se actualizan frecuentemente.</p>
       <p style="margin-top: 5px; font-size: 10px; color: #bdc3c7;">ID: ${screening_id || 'N/A'}</p>
@@ -341,7 +341,7 @@ function generateBulkReportHTML(results) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reporte Masivo de Screening - SDNCheck PA</title>
+  <title>Reporte Masivo de Screening - Sanctions Check</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -444,7 +444,7 @@ function generateBulkReportHTML(results) {
 <body>
   <div class="report">
     <div class="header">
-      <h1>🛡️ SDNCheck PA</h1>
+      <h1>🛡️ Sanctions Check</h1>
       <div class="subtitle">Reporte Masivo de Verificación de Sanciones</div>
     </div>
     
@@ -511,7 +511,7 @@ function generateBulkReportHTML(results) {
     </div>
     
     <div class="footer">
-      <p><strong>Generado: ${timestamp}</strong> | SDNCheck PA - Verificación OFAC & ONU</p>
+      <p><strong>Generado: ${timestamp}</strong> | Sanctions Check - Verificación OFAC & ONU</p>
     </div>
   </div>
   
@@ -651,7 +651,7 @@ function BulkScreening({ disabled }) {
     const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'sdncheck_template.csv';
+    link.download = 'sanctions-check_template.csv';
     link.click();
     URL.revokeObjectURL(link.href);
   };
@@ -800,7 +800,7 @@ function BulkScreening({ disabled }) {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `sdncheck_resultados_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `sanctions-check_resultados_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(link.href);
   }, [results]);
@@ -813,7 +813,7 @@ function BulkScreening({ disabled }) {
     const blob = new Blob([dataStr], { type: 'application/json' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `sdncheck_resultados_${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `sanctions-check_resultados_${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(link.href);
   }, [results]);

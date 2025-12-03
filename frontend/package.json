@@ -1,8 +1,14 @@
 {
-  "name": "sdncheck-frontend",
+  "name": "sanctions-check",
+  "productName": "Sanctions Check",
   "version": "1.0.0",
+  "description": "Professional sanctions screening application",
+  "author": "Sanctions Check",
+  "main": "electron/main.js",
+  "homepage": "./",
   "private": true,
   "dependencies": {
+    "electron-window-state": "^5.0.3",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -10,9 +16,15 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && cp public/service-worker.js build/ && node ../scripts/inject-sw-env.js",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "test:build": "npm run build && node ../scripts/test-build.js",
+    "eject": "react-scripts eject",
+    "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "env-cmd -f .env.electron npm run build && electron-builder",
+    "electron:build:win": "env-cmd -f .env.electron npm run build && electron-builder --win",
+    "electron:build:mac": "env-cmd -f .env.electron npm run build && electron-builder --mac",
+    "electron:build:linux": "env-cmd -f .env.electron npm run build && electron-builder --linux"
   },
   "eslintConfig": {
     "extends": [
@@ -31,5 +43,58 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12",
+    "env-cmd": "^11.0.0",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.sanctionscheck.app",
+    "productName": "Sanctions Check",
+    "asar": true,
+    "compression": "maximum",
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "package.json",
+      "!build/**/*.map"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "directories": {
+      "buildResources": "public"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/icon.icns",
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

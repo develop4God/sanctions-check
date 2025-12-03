@@ -20,6 +20,25 @@ Automated SDN/OFAC sanctions screening for compliance professionals.
 - Docker & Docker Compose
 - Railway (deployment)
 
+## 🎯 Key Features
+
+### Unified Report Generation
+- **Single Source of Truth**: All reports (web, PWA, Electron) generated using `report_generator.py`
+- **Consistent Output**: Same HTML structure and styling across all channels
+- **Data Validation**: Automatic validation of percentages (0-100% range)
+- **Professional Format**: Print-ready reports with metadata, logos, and audit trail
+
+### Multi-Channel Support
+- 🌐 **Web Application**: Full-featured browser-based interface
+- 📱 **PWA**: Install as a native app on mobile/desktop
+- 🖥️ **Electron**: Standalone desktop application for Windows, macOS, Linux
+
+### Screening Capabilities
+- Individual screening against OFAC and UN sanctions lists
+- Bulk screening via CSV upload
+- Real-time matching with confidence scores
+- Multi-layer fuzzy matching algorithm
+
 ## Quick Start (Local Development)
 
 ### Prerequisites
@@ -51,6 +70,17 @@ docker-compose down
 # To also remove volumes (database data):
 docker-compose down -v
 ```
+
+### Detailed Setup Instructions
+
+For detailed localhost setup, environment validation, and troubleshooting, see:
+📖 **[LOCALHOST_SETUP.md](LOCALHOST_SETUP.md)**
+
+This guide includes:
+- Step-by-step setup without Docker
+- Environment validation script
+- Testing instructions for all channels (web, PWA, Electron)
+- Troubleshooting common issues
 
 ## Electron Desktop App 🖥️
 
@@ -341,11 +371,51 @@ You can use the `.env.railway.example` files as reference:
 
 ## API Endpoints
 
-- `GET /api/v1/health` - Health check
-- `POST /api/v1/screen` - Screen individual
-- `POST /api/v1/screen/bulk` - Bulk screening (CSV)
+### Screening
+- `GET /api/v1/health` - Health check and service status
+- `POST /api/v1/screen` - Screen individual against sanctions lists
+- `POST /api/v1/screen/bulk` - Bulk screening (CSV upload)
 - `POST /api/v1/data/update` - Update sanctions data
-- `GET /api/docs` - Swagger documentation
+
+### Report Generation (NEW) ✨
+- `POST /api/v1/reports/generate` - Generate individual screening report
+  - Uses backend's `report_generator.py` for consistent output
+  - Returns HTML content ready for display/print
+  - Ensures correct percentage display (0-100%)
+  
+- `POST /api/v1/reports/generate-bulk` - Generate bulk screening report
+  - Consolidates multiple results into single report
+  - Includes statistics and detailed table
+  - Same styling as individual reports
+
+### Documentation
+- `GET /api/docs` - Interactive Swagger documentation
+- `GET /api/redoc` - ReDoc API documentation
+
+### Debug & Monitoring
+- `GET /api/v1/debug/connection-logs` - View connection logs
+- `GET /api/v1/debug/data-mode` - Check data mode (XML/Database)
+
+## Report Generation Architecture
+
+All reports are now generated using the backend's `report_generator.py` module, ensuring:
+
+1. **Consistency**: Same HTML structure across web, PWA, and Electron
+2. **Correctness**: Validated percentage calculations (fixes 825% bug)
+3. **Maintainability**: Single source of truth for report templates
+4. **Features**: Includes metadata, audit trail, and professional styling
+
+### How It Works
+
+```mermaid
+graph LR
+    A[Frontend] -->|POST screening data| B[Backend API]
+    B -->|Uses| C[report_generator.py]
+    C -->|Returns| D[HTML Report]
+    D -->|Display| A
+```
+
+The frontend no longer generates HTML - it calls the backend API which uses the same report generator regardless of channel.
 
 ## Embedding Logo in HTML Reports
 

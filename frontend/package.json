@@ -1,6 +1,11 @@
 {
-  "name": "sanctions-check-frontend",
+  "name": "sanctions-check",
+  "productName": "Sanctions Check",
   "version": "1.0.0",
+  "description": "Professional sanctions screening application",
+  "author": "Sanctions Check",
+  "main": "electron/main.js",
+  "homepage": "./",
   "private": true,
   "dependencies": {
     "prop-types": "^15.8.1",
@@ -12,7 +17,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "electron:dev": "concurrently \"cross-env BROWSER=none npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win",
+    "electron:build:mac": "npm run build && electron-builder --mac",
+    "electron:build:linux": "npm run build && electron-builder --linux"
   },
   "eslintConfig": {
     "extends": [
@@ -31,5 +41,50 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.4",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.sanctionscheck.app",
+    "productName": "Sanctions Check",
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "public"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "public/icon.icns",
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon.png",
+      "category": "Office"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

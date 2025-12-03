@@ -13,9 +13,12 @@ COPY package.json package-lock.json ./
 # Install dependencies
 RUN npm install
 
+
 # Copy source code
 COPY public/ ./public/
 COPY src/ ./src/
+# Copiar scripts desde el contexto raíz (no desde dentro de frontend)
+COPY ../scripts/ ./scripts/
 
 # Build production bundle
 ARG REACT_APP_API_URL

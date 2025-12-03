@@ -16,7 +16,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && cp public/service-worker.js build/ && node ../scripts/inject-sw-env.js",
+    "build": "react-scripts build && cp public/service-worker.js build/ && node scripts/inject-sw-env.js",
     "test": "react-scripts test",
     "test:build": "npm run build && node ../scripts/test-build.js",
     "eject": "react-scripts eject",

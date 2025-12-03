@@ -943,252 +943,122 @@ async def generate_bulk_report(
     This endpoint generates a summary report for multiple screenings,
     using consistent styling and data from the backend.
     """
-    try:
-        results = request.results
-        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
-        hits = [r for r in results if r.get("is_hit", False)]
-        clears = [r for r in results if not r.get("is_hit", False)]
-        
-        # Generate HTML using template
-        html_template = """
+        try:
+                from report_generator import (
+                        ConstanciaReportGenerator,
+                        ScreeningResult,
+                        ScreeningMatch,
+                        ScreeningConfig,
+                        ConfidenceBreakdown as ReportConfidenceBreakdown,
+                        ReportMetadataCollector,
+                )
+                from pathlib import Path
+                results = request.results
+                # Permitir comentarios por screening (campo opcional 'notes' en cada resultado)
+                # Generar un reporte HTML profesional por screening y concatenar todos en un solo HTML
+                config = None
+                generator = ConstanciaReportGenerator(
+                        output_dir=Path("/tmp/reports"),
+                        validate_before_generate=False,
+                )
+                metadata_collector = ReportMetadataCollector(
+                        data_dir=Path(__file__).parent.parent / "sanctions_data"
+                )
+                list_metadata = metadata_collector.collect_all_metadata()
+                html_reports = []
+                for data in results:
+                        # Permitir comentarios personalizados por screening
+                        notes = data.get("notes") or ""
+                        matches = []
+                        for m in data.get("matches", []):
+                                entity = m.get("entity", {})
+                                confidence = m.get("confidence", {})
+                                conf_breakdown = ReportConfidenceBreakdown(
+                                        overall=confidence.get("overall", 0.0),
+                                        name=confidence.get("name", 0.0),
+                                        document=confidence.get("document", 0.0),
+                                        dob=confidence.get("dob", 0.0),
+                                        nationality=confidence.get("nationality", 0.0),
+                                        address=confidence.get("address", 0.0),
+                                )
+                                match = ScreeningMatch(
+                                        matched_name=m.get("matched_name", entity.get("name", "")),
+                                        match_score=confidence.get("overall", 0.0),
+                                        entity_id=entity.get("id", ""),
+                                        source=entity.get("source", ""),
+                                        entity_type=entity.get("type", "individual"),
+                                        program=entity.get("program", ""),
+                                        countries=entity.get("countries", []),
+                                        all_names=entity.get("all_names", [entity.get("name", "")]),
+                                        confidence_breakdown=conf_breakdown,
+                                        flags=m.get("flags", []),
+                                        recommendation=m.get("recommendation", "MANUAL_REVIEW"),
+                                        match_layer=m.get("match_layer", 4),
+                                        first_name=entity.get("firstName") or entity.get("first_name"),
+                                        last_name=entity.get("lastName") or entity.get("last_name"),
+                                        nationality=entity.get("nationality"),
+                                        date_of_birth=entity.get("date_ofBirth") or entity.get("date_of_birth"),
+                                        identifications=entity.get("identity_documents", []),
+                                )
+                                matches.append(match)
+                        screening_config = ScreeningConfig(
+                                algorithm_version="bulk",
+                                algorithm_name="bulk",
+                                name_threshold=85,
+                                short_name_threshold=95,
+                        )
+                        input_data = data.get("input", {})
+                        result = ScreeningResult(
+                                input_name=input_data.get("name", input_data.get("nombre", "Unknown")),
+                                input_document=input_data.get("document", input_data.get("cedula", input_data.get("documento", ""))),
+                                input_country=input_data.get("country", input_data.get("pais", "")),
+                                screening_date=datetime.now(timezone.utc),
+                                matches=matches,
+                                is_hit=data.get("is_hit", False),
+                                screening_id=data.get("screening_id", str(uuid.uuid4())),
+                                analyst_name=input_data.get("analyst", "Sistema Web"),
+                                config=screening_config,
+                                processing_time_ms=data.get("processing_time_ms"),
+                                input_dob=input_data.get("date_of_birth", input_data.get("fecha_nacimiento")),
+                                input_nationality=input_data.get("nationality", input_data.get("nacionalidad")),
+                                notes=notes,
+                        )
+                        report_path = generator.generate_html_report(result, list_metadata, skip_validation=True)
+                        with open(report_path, 'r', encoding='utf-8') as f:
+                                html_content = f.read()
+                        html_reports.append(html_content)
+                        try:
+                                Path(report_path).unlink()
+                        except Exception:
+                                pass
+                # Concatenar todos los reportes en un solo HTML (simple wrapper)
+                wrapper = f"""
 <!DOCTYPE html>
-<html lang="es">
+<html lang='es'>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reporte Masivo de Screening - Sanctions Check</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      line-height: 1.5;
-      color: #1e293b;
-      background: #f8fafc;
-      padding: 20px;
-    }
-    .report {
-      max-width: 900px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
-    .header {
-      padding: 30px;
-      text-align: center;
-      color: white;
-      background: linear-gradient(135deg, #0d1b2a 0%, #1b3a5c 100%);
-    }
-    .header h1 { font-size: 28px; margin-bottom: 8px; }
-    .header .subtitle { opacity: 0.9; font-size: 14px; }
-    .summary {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
-      padding: 25px;
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .summary-card {
-      text-align: center;
-      padding: 15px;
-      background: white;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
-    }
-    .summary-card.hit { background: #fee2e2; border-color: #fecaca; }
-    .summary-value { font-size: 28px; font-weight: 800; color: #0d1b2a; }
-    .summary-card.hit .summary-value { color: #dc2626; }
-    .summary-label { font-size: 12px; color: #64748b; text-transform: uppercase; margin-top: 5px; display: block; }
-    .content { padding: 25px; }
-    .section-title {
-      font-size: 18px;
-      color: #0d1b2a;
-      margin: 25px 0 15px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    .results-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    .results-table th {
-      background: #0d1b2a;
-      color: white;
-      padding: 12px 10px;
-      text-align: left;
-      font-weight: 600;
-    }
-    .results-table td {
-      padding: 10px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .results-table tr:hover { background: #f8fafc; }
-    .results-table tr.row-hit { background: #fee2e2; }
-    .results-table tr.row-hit:hover { background: #fecaca; }
-    .badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .badge.hit { background: #dc2626; color: white; }
-    .badge.clear { background: #16a34a; color: white; }
-    .badge.reject { background: #fee2e2; color: #dc2626; }
-    .badge.review { background: #fef3c7; color: #d97706; }
-    .badge.approve { background: #dcfce7; color: #16a34a; }
-    .footer {
-      padding: 20px;
-      background: #f8fafc;
-      font-size: 11px;
-      color: #64748b;
-      text-align: center;
-      border-top: 1px solid #e2e8f0;
-    }
-    @media print {
-      body { padding: 0; background: white; }
-      .report { box-shadow: none; }
-      .no-print { display: none !important; }
-    }
-  </style>
+    <meta charset='UTF-8'>
+    <title>Reporte Masivo de Screening - Sanctions Check</title>
 </head>
-<body>
-  <div class="report">
-    <div class="header">
-      <h1>🛡️ Sanctions Check</h1>
-      <div class="subtitle">Reporte Masivo de Verificación de Sanciones</div>
+<body style='background:#f5f5f5;'>
+    <h1 style='text-align:center;margin:30px 0;'>Reporte Masivo de Screening</h1>
+    <div style='max-width:1200px;margin:0 auto;'>
+        {''.join(html_reports)}
     </div>
-    
-    <div class="summary">
-      <div class="summary-card">
-        <div class="summary-value">{total}</div>
-        <span class="summary-label">Total Procesados</span>
-      </div>
-      <div class="summary-card hit">
-        <div class="summary-value">{hits_count}</div>
-        <span class="summary-label">Coincidencias</span>
-      </div>
-      <div class="summary-card">
-        <div class="summary-value">{clears_count}</div>
-        <span class="summary-label">Sin Coincidencias</span>
-      </div>
-      <div class="summary-card">
-        <div class="summary-value">{hit_rate}%</div>
-        <span class="summary-label">Tasa de Hits</span>
-      </div>
-    </div>
-    
-    <div class="content">
-      <div class="section-title">📊 Detalle de Resultados</div>
-      <table class="results-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Nombre</th>
-            <th>Documento</th>
-            <th>País</th>
-            <th>Estado</th>
-            <th>Hits</th>
-            <th>Recomendación</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows}
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="footer">
-      <p><strong>Generado: {timestamp}</strong> | Sanctions Check - Verificación OFAC & ONU</p>
-    </div>
-  </div>
-  
-  <div class="no-print" style="text-align: center; margin-top: 20px;">
-    <button onclick="window.print()" style="
-      padding: 12px 30px;
-      background: linear-gradient(135deg, #00b4d8 0%, #0096c7 100%);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    ">🖨️ Imprimir Reporte</button>
-  </div>
 </body>
 </html>
 """
-        
-        # Generate table rows
-        rows_html = []
-        for i, r in enumerate(results, 1):
-            rec = "APPROVE"
-            if r.get("is_hit") and r.get("matches"):
-                rec = r["matches"][0].get("recommendation", "MANUAL_REVIEW")
-            
-            input_data = r.get("input", {})
-            nombre = input_data.get("nombre") or input_data.get("name", "-")
-            documento = input_data.get("cedula") or input_data.get("document") or input_data.get("documento", "-")
-            pais = input_data.get("pais") or input_data.get("country", "-")
-            
-            rec_text = {
-                'AUTO_ESCALATE': 'ESCALAR',
-                'REJECT': 'RECHAZAR',
-                'AUTO_CLEAR': 'AUTO OK',
-                'APPROVE': 'APROBAR',
-            }.get(rec, 'REVISAR')
-            
-            rec_class = {
-                'AUTO_ESCALATE': 'reject',
-                'REJECT': 'reject',
-                'MANUAL_REVIEW': 'review',
-                'LOW_CONFIDENCE_REVIEW': 'review',
-                'AUTO_CLEAR': 'approve',
-                'APPROVE': 'approve',
-            }.get(rec, 'review')
-            
-            row = f"""
-              <tr class="{'row-hit' if r.get('is_hit') else ''}">
-                <td>{i}</td>
-                <td><strong>{nombre}</strong></td>
-                <td>{documento}</td>
-                <td>{pais}</td>
-                <td><span class="badge {'hit' if r.get('is_hit') else 'clear'}">{'⚠️ HIT' if r.get('is_hit') else '✅ OK'}</span></td>
-                <td>{r.get('hit_count', 0)}</td>
-                <td><span class="badge {rec_class}">{rec_text}</span></td>
-              </tr>
-            """
-            rows_html.append(row)
-        
-        # Calculate hit rate
-        hit_rate = (len(hits) / len(results) * 100) if results else 0
-        
-        # Fill template
-        html_content = html_template.format(
-            total=len(results),
-            hits_count=len(hits),
-            clears_count=len(clears),
-            hit_rate=f"{hit_rate:.1f}",
-            rows="".join(rows_html),
-            timestamp=timestamp,
-        )
-        
-        return ReportResponse(
-            success=True,
-            html_content=html_content,
-            report_type="bulk",
-            generated_at=datetime.now(timezone.utc).isoformat(),
-        )
-        
-    except Exception as e:
-        logger.error(f"Bulk report generation failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail="Bulk report generation failed"
-        )
+                return ReportResponse(
+                        success=True,
+                        html_content=wrapper,
+                        report_type="bulk",
+                        generated_at=datetime.now(timezone.utc).isoformat(),
+                )
+        except Exception as e:
+                logger.error(f"Bulk report generation failed: {e}", exc_info=True)
+                raise HTTPException(
+                        status_code=500,
+                        detail="Bulk report generation failed"
+                )
 
 
 # Root redirect to docs

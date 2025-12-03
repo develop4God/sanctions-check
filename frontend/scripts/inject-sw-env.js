@@ -1,4 +1,3 @@
-
 #!/usr/bin/env node
 /**
  * Service Worker Environment Injector

@@ -236,37 +236,35 @@ async def startup():
                 _data_mode = "xml"
                 _db_provider = None
         
+
         # If not in database mode, use XML mode
         if _data_mode == "xml":
-    logger.info("🔧 XML mode: Downloading and loading entities...")
-    
-    # Download latest XMLs (with fallback to cached)
-    try:
-        loop = asyncio.get_event_loop()
-        downloader = EnhancedSanctionsDownloader(config=_config)
-        entities, validation = await loop.run_in_executor(
-            _executor, downloader.download_and_parse_all
-        )
-        
-        if validation.is_valid:
-            logger.info(f"✓ Downloaded {len(entities)} fresh entities")
-        else:
-            logger.warning(f"Download completed with {len(validation.warnings)} warnings")
-            
-    except Exception as e:
-        logger.warning(f"Download failed, will use cached XMLs: {e}")
-    
-    # Initialize and load screener
-    _screener = EnhancedSanctionsScreener(config=_config, data_dir=DATA_DIR)
-    
-    ofac_count = await loop.run_in_executor(_executor, _screener.load_ofac)
-    logger.info(f"✓ Loaded {ofac_count} OFAC entities")
+            logger.info("🔧 XML mode: Downloading and loading entities...")
+            # Download latest XMLs (with fallback to cached)
+            try:
+                loop = asyncio.get_event_loop()
+                downloader = EnhancedSanctionsDownloader(config=_config)
+                entities, validation = await loop.run_in_executor(
+                    _executor, downloader.download_and_parse_all
+                )
+                if validation.is_valid:
+                    logger.info(f"✓ Downloaded {len(entities)} fresh entities")
+                else:
+                    logger.warning(f"Download completed with {len(validation.warnings)} warnings")
+            except Exception as e:
+                logger.warning(f"Download failed, will use cached XMLs: {e}")
 
-    un_count = await loop.run_in_executor(_executor, _screener.load_un)
-    logger.info(f"✓ Loaded {un_count} UN entities")
+            # Initialize and load screener
+            _screener = EnhancedSanctionsScreener(config=_config, data_dir=DATA_DIR)
 
-    total_entities = len(_screener.entities)
-    logger.info(f"✓ Total entities: {total_entities}")
+            ofac_count = await loop.run_in_executor(_executor, _screener.load_ofac)
+            logger.info(f"✓ Loaded {ofac_count} OFAC entities")
+
+            un_count = await loop.run_in_executor(_executor, _screener.load_un)
+            logger.info(f"✓ Loaded {un_count} UN entities")
+
+            total_entities = len(_screener.entities)
+            logger.info(f"✓ Total entities: {total_entities}")
 
         elapsed = time.time() - start_time
         _startup_time = datetime.now(timezone.utc)

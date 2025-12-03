@@ -483,10 +483,12 @@ body {
 
 .main-content {
   flex: 1;
-  max-width: 1400px;
+  max-width: 100vw;
   margin: 0 auto;
   padding: var(--spacing-xl);
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
 }
 
 .tab-content {
@@ -1527,93 +1529,74 @@ body {
   .intro-title {
     font-size: 2.5rem;
   }
-  
   .intro-features {
     flex-direction: column;
     gap: var(--spacing-md);
   }
-  
   .feature-item {
     flex-direction: row;
     justify-content: center;
   }
-  
   .header {
     padding: var(--spacing-sm) var(--spacing-md);
   }
-  
   .header-content {
     gap: var(--spacing-sm);
   }
-  
   .header-title {
     font-size: 1.2rem;
   }
-  
   .nav-label {
     display: none;
   }
-  
   .nav-button {
     padding: var(--spacing-sm);
   }
-  
   .nav-icon {
     font-size: 1.3rem;
   }
-  
   .main-content {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
+    max-width: 100vw;
+    overflow-x: auto;
   }
-  
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
   .form-actions {
     flex-direction: column;
   }
-  
   .form-actions .btn {
     width: 100%;
   }
-  
   .results-header {
     flex-direction: column;
     text-align: center;
   }
-  
   .result-status {
     flex-direction: column;
   }
-  
   .detail-row {
     flex-direction: column;
     gap: var(--spacing-xs);
   }
-  
   .detail-label {
     flex: none;
   }
-  
   .summary-stats {
     grid-template-columns: repeat(2, 1fr);
   }
-  
   .footer-content {
     flex-direction: column;
     text-align: center;
     gap: var(--spacing-xs);
   }
-  
   .export-section {
     flex-direction: column;
   }
-  
   .bulk-actions {
     flex-direction: column;
   }
-  
   .bulk-actions .btn {
     width: 100%;
   }
@@ -1623,32 +1606,30 @@ body {
   .intro-title {
     font-size: 2rem;
   }
-  
   .logo-icon {
     width: 80px;
     height: 80px;
   }
-  
   .shield-icon {
     font-size: 2.5rem;
   }
-  
   .header-shield {
     font-size: 1.4rem;
   }
-  
   .header-title {
     font-size: 1rem;
   }
-  
+  .main-content {
+    padding: var(--spacing-xs);
+    max-width: 100vw;
+    overflow-x: auto;
+  }
   .summary-stats {
     grid-template-columns: 1fr 1fr;
   }
-  
   .stat-value {
     font-size: 1.5rem;
   }
-  
   .upload-area {
     padding: var(--spacing-xl) var(--spacing-md);
   }

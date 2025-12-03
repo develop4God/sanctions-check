@@ -20,7 +20,7 @@ function createWindow() {
     },
     // Modern window style
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '../frontend/public/icon.png')
+    icon: path.join(__dirname, '../public/icon.png')
   });
 
   // Load the app
@@ -31,7 +31,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   } else {
     // Production mode - load from build folder
-    mainWindow.loadFile(path.join(__dirname, '../frontend/build/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../build/index.html'));
   }
 
   // Handle window closed

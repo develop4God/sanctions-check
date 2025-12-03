@@ -55,9 +55,11 @@
     "files": [
       "build/**/*",
       "electron/**/*",
-      "public/**/*",
       "package.json"
     ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
     "directories": {
       "buildResources": "public"
     },

@@ -254,7 +254,8 @@ function MatchCard({ match, index }) {
 function ConfidenceItem({ label, value }) {
   if (value === undefined || value === null) return null;
   
-  const percentage = value * 100;
+  // Value is already a percentage (0-100), no need to multiply
+  const percentage = value;
   const levelClass = 
     percentage >= 80 ? 'high' :
     percentage >= 50 ? 'medium' : 'low';

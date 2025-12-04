@@ -220,3 +220,28 @@ class ErrorResponse(BaseModel):
     """Standardized error response format."""
 
     error: ErrorDetail
+
+
+class ReportRequest(BaseModel):
+    """Request schema for generating an individual screening report."""
+    
+    screening_data: Dict[str, Any] = Field(
+        ..., description="Complete screening result data to generate report from"
+    )
+
+
+class BulkReportRequest(BaseModel):
+    """Request schema for generating a bulk screening report."""
+    
+    results: List[Dict[str, Any]] = Field(
+        ..., description="List of screening results to generate report from"
+    )
+
+
+class ReportResponse(BaseModel):
+    """Response schema for report generation."""
+    
+    success: bool = Field(..., description="Whether report generation was successful")
+    html_content: str = Field(..., description="Generated HTML report content")
+    report_type: str = Field(..., description="Type of report (individual or bulk)")
+    generated_at: str = Field(..., description="ISO 8601 timestamp of generation")

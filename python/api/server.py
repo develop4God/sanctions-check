@@ -44,6 +44,9 @@ from api.models import (
     DataFileInfo,
     DataUpdateResponse,
     ErrorResponse,
+    ReportRequest,
+    BulkReportRequest,
+    ReportResponse,
 )
 from api.middleware import (
     setup_cors,
@@ -257,9 +260,11 @@ async def startup():
             # Initialize and load screener
             _screener = EnhancedSanctionsScreener(config=_config, data_dir=DATA_DIR)
 
+            loop = asyncio.get_event_loop()
             ofac_count = await loop.run_in_executor(_executor, _screener.load_ofac)
             logger.info(f"✓ Loaded {ofac_count} OFAC entities")
 
+            loop = asyncio.get_event_loop()
             un_count = await loop.run_in_executor(_executor, _screener.load_un)
             logger.info(f"✓ Loaded {un_count} UN entities")
 
@@ -706,8 +711,7 @@ async def health_check(
             memory_usage_mb=None,
             uptime_seconds=None,
             ofac_last_updated=None,
-            un_last_updated=None,
-            error_message=str(e),
+            un_last_updated=None
         )
 
 
@@ -782,13 +786,287 @@ async def update_data(
         raise HTTPException(status_code=500, detail="Data update failed")
 
 
+@app.post(
+    "/api/v1/reports/generate",
+    response_model=ReportResponse,
+    responses={
+        200: {"model": ReportResponse, "description": "Report generated successfully"},
+        400: {"model": ErrorResponse, "description": "Invalid request data"},
+        500: {"model": ErrorResponse, "description": "Report generation failed"},
+    },
+    summary="Generate individual screening report",
+    description="Generate HTML report for individual screening using report_generator.py",
+)
+async def generate_individual_report(
+    request: ReportRequest,
+    config: ConfigManager = Depends(get_config_instance),
+):
+    """Generate HTML report for an individual screening result.
+    
+    This endpoint uses the backend's report_generator.py to ensure
+    consistent report generation across all channels (web, PWA, electron).
+    """
+    try:
+        from report_generator import (
+            ConstanciaReportGenerator,
+            ScreeningResult,
+            ScreeningMatch,
+            ScreeningConfig,
+            ConfidenceBreakdown as ReportConfidenceBreakdown,
+            ReportMetadataCollector,
+        )
+        from pathlib import Path
+        
+        # Extract screening data
+        data = request.screening_data
+        
+        # Build matches for report
+        matches = []
+        for m in data.get("matches", []):
+            entity = m.get("entity", {})
+            confidence = m.get("confidence", {})
+            
+            # Create confidence breakdown
+            conf_breakdown = ReportConfidenceBreakdown(
+                overall=confidence.get("overall", 0.0),
+                name=confidence.get("name", 0.0),
+                document=confidence.get("document", 0.0),
+                dob=confidence.get("dob", 0.0),
+                nationality=confidence.get("nationality", 0.0),
+                address=confidence.get("address", 0.0),
+            )
+            
+            # Create screening match
+            match = ScreeningMatch(
+                matched_name=m.get("matched_name", entity.get("name", "")),
+                match_score=confidence.get("overall", 0.0),
+                entity_id=entity.get("id", ""),
+                source=entity.get("source", ""),
+                entity_type=entity.get("type", "individual"),
+                program=entity.get("program", ""),
+                countries=entity.get("countries", []),
+                all_names=entity.get("all_names", [entity.get("name", "")]),
+                confidence_breakdown=conf_breakdown,
+                flags=m.get("flags", []),
+                recommendation=m.get("recommendation", "MANUAL_REVIEW"),
+                match_layer=m.get("match_layer", 4),
+                first_name=entity.get("firstName") or entity.get("first_name"),
+                last_name=entity.get("lastName") or entity.get("last_name"),
+                nationality=entity.get("nationality"),
+                date_of_birth=entity.get("dateOfBirth") or entity.get("date_of_birth"),
+                identifications=entity.get("identity_documents", []),
+            )
+            matches.append(match)
+        
+        # Create screening config snapshot
+        screening_config = ScreeningConfig(
+            algorithm_version=getattr(config.algorithm, 'version', '1.0.0'),
+            algorithm_name=getattr(config.algorithm, 'name', 'Desconocido'),
+            name_threshold=getattr(config.algorithm, 'name_threshold', 85),
+            short_name_threshold=getattr(config.algorithm, 'short_name_threshold', 95),
+        )
+        
+        # Get input data
+        input_data = data.get("input", {})
+        
+        # Create screening result
+        result = ScreeningResult(
+            input_name=input_data.get("name", input_data.get("nombre", "Unknown")),
+            input_document=input_data.get("document", input_data.get("cedula", input_data.get("documento", ""))),
+            input_country=input_data.get("country", input_data.get("pais", "")),
+            screening_date=datetime.now(timezone.utc),
+            matches=matches,
+            is_hit=data.get("is_hit", False),
+            screening_id=data.get("screening_id", str(uuid.uuid4())),
+            analyst_name=input_data.get("analyst", "Sistema Web"),
+            config=screening_config,
+            processing_time_ms=data.get("processing_time_ms"),
+            input_dob=input_data.get("date_of_birth", input_data.get("fecha_nacimiento")),
+            input_nationality=input_data.get("nationality", input_data.get("nacionalidad")),
+        )
+        
+        # Collect list metadata
+        metadata_collector = ReportMetadataCollector(
+            data_dir=Path(__file__).parent.parent / "sanctions_data"
+        )
+        list_metadata = metadata_collector.collect_all_metadata()
+        
+        # Generate report using the generator directly
+        generator = ConstanciaReportGenerator(
+            output_dir=Path("/tmp/reports"),
+            validate_before_generate=False,
+        )
+        
+        # Generate HTML file temporarily and read content
+        report_path = generator.generate_html_report(result, list_metadata, skip_validation=True)
+        
+        # Read the generated HTML
+        with open(report_path, 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        
+        # Clean up temporary file
+        try:
+            Path(report_path).unlink()
+        except Exception:
+            pass
+        
+        return ReportResponse(
+            success=True,
+            html_content=html_content,
+            report_type="individual",
+            generated_at=datetime.now(timezone.utc).isoformat(),
+        )
+        
+    except Exception as e:
+        logger.error(f"Report generation failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Report generation failed"
+        )
+
+
+@app.post(
+    "/api/v1/reports/generate-bulk",
+    response_model=ReportResponse,
+    responses={
+        200: {"model": ReportResponse, "description": "Bulk report generated successfully"},
+        400: {"model": ErrorResponse, "description": "Invalid request data"},
+        500: {"model": ErrorResponse, "description": "Report generation failed"},
+    },
+    summary="Generate bulk screening report",
+    description="Generate HTML report for multiple screening results using report_generator.py",
+)
+async def generate_bulk_report(
+    request: BulkReportRequest,
+):
+    """Generate HTML report for bulk screening results.
+    
+    This endpoint generates a summary report for multiple screenings,
+    using consistent styling and data from the backend.
+    """
+    try:
+        from report_generator import (
+            ConstanciaReportGenerator,
+            ScreeningResult,
+            ScreeningMatch,
+            ScreeningConfig,
+            ConfidenceBreakdown as ReportConfidenceBreakdown,
+            ReportMetadataCollector,
+        )
+        from pathlib import Path
+        results = request.results
+        generator = ConstanciaReportGenerator(
+            output_dir=Path("/tmp/reports"),
+            validate_before_generate=False,
+        )
+        metadata_collector = ReportMetadataCollector(
+            data_dir=Path(__file__).parent.parent / "sanctions_data"
+        )
+        list_metadata = metadata_collector.collect_all_metadata()
+        html_reports = []
+        for data in results:
+            notes = data.get("notes") or ""
+            matches = []
+            for m in data.get("matches", []):
+                entity = m.get("entity", {})
+                confidence = m.get("confidence", {})
+                conf_breakdown = ReportConfidenceBreakdown(
+                    overall=confidence.get("overall", 0.0),
+                    name=confidence.get("name", 0.0),
+                    document=confidence.get("document", 0.0),
+                    dob=confidence.get("dob", 0.0),
+                    nationality=confidence.get("nationality", 0.0),
+                    address=confidence.get("address", 0.0),
+                )
+                match = ScreeningMatch(
+                    matched_name=m.get("matched_name", entity.get("name", "")),
+                    match_score=confidence.get("overall", 0.0),
+                    entity_id=entity.get("id", ""),
+                    source=entity.get("source", ""),
+                    entity_type=entity.get("type", "individual"),
+                    program=entity.get("program", ""),
+                    countries=entity.get("countries", []),
+                    all_names=entity.get("all_names", [entity.get("name", "")]),
+                    confidence_breakdown=conf_breakdown,
+                    flags=m.get("flags", []),
+                    recommendation=m.get("recommendation", "MANUAL_REVIEW"),
+                    match_layer=m.get("match_layer", 4),
+                    first_name=entity.get("firstName") or entity.get("first_name"),
+                    last_name=entity.get("lastName") or entity.get("last_name"),
+                    nationality=entity.get("nationality"),
+                    date_of_birth=entity.get("date_ofBirth") or entity.get("date_of_birth"),
+                    identifications=entity.get("identity_documents", []),
+                )
+                matches.append(match)
+            screening_config = ScreeningConfig(
+                algorithm_version="bulk",
+                algorithm_name="bulk",
+                name_threshold=85,
+                short_name_threshold=95,
+            )
+            input_data = data.get("input", {})
+            result = ScreeningResult(
+                input_name=input_data.get("name", input_data.get("nombre", "Unknown")),
+                input_document=input_data.get("document", input_data.get("cedula", input_data.get("documento", ""))),
+                input_country=input_data.get("country", input_data.get("pais", "")),
+                screening_date=datetime.now(timezone.utc),
+                matches=matches,
+                is_hit=data.get("is_hit", False),
+                screening_id=data.get("screening_id", str(uuid.uuid4())),
+                analyst_name=input_data.get("analyst", "Sistema Web"),
+                config=screening_config,
+                processing_time_ms=data.get("processing_time_ms"),
+                input_dob=input_data.get("date_of_birth", input_data.get("fecha_nacimiento")),
+                input_nationality=input_data.get("nationality", input_data.get("nacionalidad")),
+                notes=notes,
+            )
+            report_path = generator.generate_html_report(result, list_metadata, skip_validation=True)
+            with open(report_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            html_reports.append(html_content)
+            try:
+                Path(report_path).unlink()
+            except Exception:
+                pass
+        # Concatenar todos los reportes en un solo HTML (simple wrapper)
+        wrapper = f"""
+<!DOCTYPE html>
+<html lang='es'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Reporte Masivo de Screening - Sanctions Check</title>
+</head>
+<body style='background:#f5f5f5;'>
+  <h1 style='text-align:center;margin:30px 0;'>Reporte Masivo de Screening</h1>
+  <div style='max-width:1200px;margin:0 auto;'>
+    {''.join(html_reports)}
+  </div>
+</body>
+</html>
+"""
+        return ReportResponse(
+            success=True,
+            html_content=wrapper,
+            report_type="bulk",
+            generated_at=datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception as e:
+        logger.error(f"Bulk report generation failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Bulk report generation failed"
+        )
+
+
 # Root redirect to docs
 @app.get("/", include_in_schema=False)
 async def root():
     """Redirect root to API documentation."""
-    from fastapi.responses import RedirectResponse
-
-    return RedirectResponse(url="/api/docs")
+    try:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/api/docs")
+    except ImportError:
+        return {"message": "FastAPI responses module not available"}
 
 
 # ============================================================================
@@ -882,6 +1160,8 @@ async def data_mode_info():
 
 
 if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host=API_HOST, port=API_PORT)
+    try:
+        import uvicorn
+        uvicorn.run(app, host=API_HOST, port=API_PORT)
+    except ImportError:
+        print("Uvicorn no está instalado. Instálalo con 'pip install uvicorn'.")
